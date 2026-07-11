@@ -28,8 +28,10 @@
 #include <QCloseEvent>
 #include <QDesktopServices>
 #include <QFocusEvent>
+#include <QFont>
 #include <QIcon>
 #include <QKeyEvent>
+#include <QLabel>
 #include <QMenuBar>
 #include <QMouseEvent>
 #include <QShortcut>
@@ -41,6 +43,12 @@
 #include <QWindow>
 
 namespace Zeal::WidgetUi {
+
+namespace {
+constexpr int DefaultSidebarWidth = 180;
+constexpr int DefaultLearningNotesWidth = 300;
+constexpr int MinimumLearningNotesWidth = 240;
+} // namespace
 
 MainWindow::MainWindow(Core::Application *app, QWidget *parent)
     : QMainWindow(parent)
@@ -85,9 +93,44 @@ MainWindow::MainWindow(Core::Application *app, QWidget *parent)
     auto *sb = new Sidebar::Container();
     sb->addView(sbView);
 
+    auto *learningNotesPanel = new QWidget(m_splitter);
+    learningNotesPanel->setMinimumWidth(MinimumLearningNotesWidth);
+
+    auto *learningNotesLayout = new QVBoxLayout(learningNotesPanel);
+    learningNotesLayout->setContentsMargins(12, 12, 12, 12);
+    learningNotesLayout->setSpacing(8);
+
+    auto *learningNotesTitle = new QLabel(tr("Learning Notes"), learningNotesPanel);
+    QFont learningNotesTitleFont = learningNotesTitle->font();
+    learningNotesTitleFont.setBold(true);
+    learningNotesTitle->setFont(learningNotesTitleFont);
+    learningNotesLayout->addWidget(learningNotesTitle);
+
+    auto *learningNotesText = new QLabel(
+        tr("Notes, highlights, snippets, and bookmarks saved from documentation pages will appear here."),
+        learningNotesPanel);
+    learningNotesText->setWordWrap(true);
+    learningNotesLayout->addWidget(learningNotesText);
+    learningNotesLayout->addStretch();
+
     // Setup splitter.
     m_splitter->insertWidget(0, sb);
-    m_splitter->restoreState(windowState.splitterState);
+    m_splitter->addWidget(learningNotesPanel);
+    m_splitter->setStretchFactor(0, 0);
+    m_splitter->setStretchFactor(1, 1);
+    m_splitter->setStretchFactor(2, 0);
+
+    const auto applyDefaultSplitterSizes = [this]() {
+        const int contentWidth = qMax(m_webViewStack->minimumWidth(),
+                                      width() - DefaultSidebarWidth - DefaultLearningNotesWidth);
+        m_splitter->setSizes({DefaultSidebarWidth, contentWidth, DefaultLearningNotesWidth});
+    };
+
+    const bool isSplitterStateRestored = m_splitter->restoreState(windowState.splitterState);
+    const QList<int> splitterSizes = m_splitter->sizes();
+    if (!isSplitterStateRestored || splitterSizes.size() != 3 || splitterSizes.at(2) < MinimumLearningNotesWidth) {
+        applyDefaultSplitterSizes();
+    }
     sb->setVisible(m_showSidebarAction->isChecked());
 
     // Setup web settings.
