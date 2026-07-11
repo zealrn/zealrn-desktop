@@ -7,6 +7,7 @@
 #include "aboutdialog.h"
 #include "browsertab.h"
 #include "docsetsdialog.h"
+#include "learningnotespanel.h"
 #include "searchsidebar.h"
 #include "settingsdialog.h"
 #include "sidebarviewprovider.h"
@@ -28,10 +29,8 @@
 #include <QCloseEvent>
 #include <QDesktopServices>
 #include <QFocusEvent>
-#include <QFont>
 #include <QIcon>
 #include <QKeyEvent>
-#include <QLabel>
 #include <QMenuBar>
 #include <QMouseEvent>
 #include <QShortcut>
@@ -93,25 +92,8 @@ MainWindow::MainWindow(Core::Application *app, QWidget *parent)
     auto *sb = new Sidebar::Container();
     sb->addView(sbView);
 
-    auto *learningNotesPanel = new QWidget(m_splitter);
+    auto *learningNotesPanel = new LearningNotesPanel(m_splitter);
     learningNotesPanel->setMinimumWidth(MinimumLearningNotesWidth);
-
-    auto *learningNotesLayout = new QVBoxLayout(learningNotesPanel);
-    learningNotesLayout->setContentsMargins(12, 12, 12, 12);
-    learningNotesLayout->setSpacing(8);
-
-    auto *learningNotesTitle = new QLabel(tr("Learning Notes"), learningNotesPanel);
-    QFont learningNotesTitleFont = learningNotesTitle->font();
-    learningNotesTitleFont.setBold(true);
-    learningNotesTitle->setFont(learningNotesTitleFont);
-    learningNotesLayout->addWidget(learningNotesTitle);
-
-    auto *learningNotesText = new QLabel(
-        tr("Notes, highlights, snippets, and bookmarks saved from documentation pages will appear here."),
-        learningNotesPanel);
-    learningNotesText->setWordWrap(true);
-    learningNotesLayout->addWidget(learningNotesText);
-    learningNotesLayout->addStretch();
 
     // Setup splitter.
     m_splitter->insertWidget(0, sb);

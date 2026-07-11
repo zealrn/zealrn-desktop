@@ -12,6 +12,7 @@ add_library(Ui STATIC
     browsertab.cpp
     docsetlistitemdelegate.cpp
     docsetsdialog.cpp
+    learningnotespanel.cpp
     mainwindow.cpp
     searchitemdelegate.cpp
     searchsidebar.cpp
