@@ -6,6 +6,8 @@
 #include <QCoreApplication>
 #include <QFont>
 #include <QLabel>
+#include <QPlainTextEdit>
+#include <QPushButton>
 #include <QVBoxLayout>
 
 namespace Zeal::WidgetUi {
@@ -23,14 +25,17 @@ LearningNotesPanel::LearningNotesPanel(QWidget *parent)
     title->setFont(titleFont);
     layout->addWidget(title);
 
-    auto *description = new QLabel(
-        QCoreApplication::translate(
-            "LearningNotesPanel",
-            "Notes, highlights, snippets, and bookmarks saved from documentation pages will appear here."),
-        this);
-    description->setWordWrap(true);
-    layout->addWidget(description);
-    layout->addStretch();
+    auto *status = new QLabel(QCoreApplication::translate("LearningNotesPanel", "Unsaved draft"), this);
+    layout->addWidget(status);
+
+    auto *editor = new QPlainTextEdit(this);
+    editor->setPlaceholderText(
+        QCoreApplication::translate("LearningNotesPanel", "Write what you learned from this documentation page…"));
+    layout->addWidget(editor, 1);
+
+    auto *clearDraftButton = new QPushButton(QCoreApplication::translate("LearningNotesPanel", "Clear Draft"), this);
+    connect(clearDraftButton, &QPushButton::clicked, editor, &QPlainTextEdit::clear);
+    layout->addWidget(clearDraftButton, 0, Qt::AlignRight);
 }
 
 } // namespace Zeal::WidgetUi
