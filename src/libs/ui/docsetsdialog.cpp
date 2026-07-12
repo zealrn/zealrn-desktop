@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "docsetsdialog.h"
+#include "docsetcatalog.h"
 #include "ui_docsetsdialog.h"
 
 #include "docsetlistitemdelegate.h"
@@ -21,14 +22,13 @@
 #include <QDateTime>
 #include <QDir>
 #include <QInputDialog>
-#include <QJsonArray>
-#include <QJsonDocument>
 #include <QLocale>
 #include <QLoggingCategory>
 #include <QMessageBox>
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QPushButton>
+#include <QSslError>
 #include <QTemporaryFile>
 #include <QUrl>
 
@@ -50,7 +50,6 @@ enum class DownloadType {
 };
 
 constexpr auto ApiServerUrl = "https://api.zealdocs.org/v1"_L1;
-constexpr auto RedirectServerUrl = "https://go.zealdocs.org/d/%1/%2/latest"_L1;
 // TODO: Each source plugin should have its own cache
 constexpr auto DocsetListCacheFileName = "com.kapeli.json"_L1;
 
@@ -310,9 +309,23 @@ void DocsetsDialog::downloadCompleted()
         }
 
         if (reply->error() != QNetworkReply::OperationCanceledError) {
-            const QString msg = tr("Download failed!<br><br><b>Error:</b> %1<br><b>URL:</b> %2")
-                                    .arg(reply->errorString().toHtmlEscaped(),
-                                         reply->request().url().toString().toHtmlEscaped());
+            const bool catalogRequest = downloadType(reply.data()) == DownloadType::DocsetList;
+            const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+            qCWarning(log,
+                      "Request failed: url=%s status=%d networkError=%d error=%s",
+                      qPrintable(reply->request().url().toString()),
+                      status,
+                      static_cast<int>(reply->error()),
+                      qPrintable(reply->errorString()));
+            const QString msg = catalogRequest
+                ? tr("Could not update docset catalog.<br><br><b>URL:</b> %1<br><b>HTTP status:</b> %2"
+                     "<br><b>Error:</b> %3")
+                      .arg(reply->request().url().toString().toHtmlEscaped(),
+                           status > 0 ? QString::number(status) : tr("not available"),
+                           reply->errorString().toHtmlEscaped())
+                : tr("Download failed!<br><br><b>Error:</b> %1<br><b>URL:</b> %2")
+                      .arg(reply->errorString().toHtmlEscaped(),
+                           reply->request().url().toString().toHtmlEscaped());
             const int ret = QMessageBox::warning(this,
                                                  QStringLiteral("ZealRN"),
                                                  msg,
@@ -578,16 +591,16 @@ void DocsetsDialog::loadDocsetList()
         return;
     }
 
-    QJsonParseError jsonError;
-    const QJsonDocument jsonDoc = QJsonDocument::fromJson(file.readAll(), &jsonError);
-
-    if (jsonError.error != QJsonParseError::NoError) {
+    QString error;
+    const auto catalog = parseDocsetCatalog(file.readAll(), &error);
+    if (!catalog.has_value()) {
+        qCWarning(log, "Ignoring invalid cached docset catalog at '%s': %s", qPrintable(fi.filePath()), qPrintable(error));
         downloadDocsetList();
         return;
     }
 
     updateDocsetListDownloadTimeLabel(fi.lastModified());
-    processDocsetList(jsonDoc.array());
+    processDocsetList(*catalog);
 }
 
 void DocsetsDialog::setupInstalledDocsetsTab()
@@ -827,6 +840,12 @@ bool DocsetsDialog::updatesAvailable() const
 QNetworkReply *DocsetsDialog::download(const QUrl &url)
 {
     QNetworkReply *reply = m_application->download(url);
+    qCInfo(log, "Requesting %s", qPrintable(url.toString()));
+    connect(reply, &QNetworkReply::sslErrors, this, [url](const QList<QSslError> &errors) {
+        for (const QSslError &error : errors) {
+            qCWarning(log, "TLS error for %s: %s", qPrintable(url.toString()), qPrintable(error.errorString()));
+        }
+    });
     connect(reply, &QNetworkReply::downloadProgress, this, &DocsetsDialog::downloadProgress);
     connect(reply, &QNetworkReply::finished, this, &DocsetsDialog::downloadCompleted);
     m_replies.append(reply);
@@ -870,9 +889,6 @@ void DocsetsDialog::loadUserFeedList()
 
 void DocsetsDialog::downloadDocsetList()
 {
-    ui->availableDocsetList->clear();
-    m_availableDocsets.clear();
-
     QNetworkReply *reply = download(QUrl(ApiServerUrl + QLatin1String("/docsets")));
     setDownloadType(reply, DownloadType::DocsetList);
 }
@@ -880,18 +896,28 @@ void DocsetsDialog::downloadDocsetList()
 void DocsetsDialog::processDocsetListReply(QNetworkReply *reply)
 {
     const QByteArray replyData = reply->readAll();
+    const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    const QString contentType = reply->header(QNetworkRequest::ContentTypeHeader).toString();
+    QString error;
+    const auto catalog = parseDocsetCatalog(replyData, &error);
+    qCInfo(log,
+           "Docset catalog response: requestUrl=%s finalUrl=%s status=%d contentType=%s bytes=%lld parsed=%d",
+           qPrintable(reply->request().url().toString()),
+           qPrintable(reply->url().toString()),
+           status,
+           qPrintable(contentType),
+           static_cast<long long>(replyData.size()),
+           catalog.has_value() ? static_cast<int>(catalog->size()) : 0);
 
-    QJsonParseError jsonError;
-    const QJsonDocument jsonDoc = QJsonDocument::fromJson(replyData, &jsonError);
-
-    if (jsonError.error != QJsonParseError::NoError) {
-        qCWarning(log,
-                  "Failed to parse docset list JSON at offset %lld: %s.",
-                  static_cast<long long>(jsonError.offset),
-                  qPrintable(jsonError.errorString()));
+    if (status < 200 || status >= 300 || !catalog.has_value()) {
+        qCWarning(log, "Rejected docset catalog response: %s", qPrintable(error));
         const QMessageBox::StandardButton rc = QMessageBox::warning(this,
                                                                     QStringLiteral("ZealRN"),
-                                                                    tr("Server returned a corrupted docset list."),
+                                                                    tr("Could not update docset catalog.<br><br><b>URL:</b> %1"
+                                                                       "<br><b>HTTP status:</b> %2<br><b>Reason:</b> %3")
+                                                                        .arg(reply->request().url().toString().toHtmlEscaped(),
+                                                                             QString::number(status),
+                                                                             error.toHtmlEscaped()),
                                                                     QMessageBox::Retry | QMessageBox::Cancel);
 
         if (rc == QMessageBox::Retry) {
@@ -901,26 +927,27 @@ void DocsetsDialog::processDocsetListReply(QNetworkReply *reply)
         return;
     }
 
-    QFile file(cacheLocation(DocsetListCacheFileName));
-    if (file.open(QIODevice::WriteOnly)) {
-        file.write(replyData);
-        file.close(); // Flush to ensure timestamp update on all systems.
-        updateDocsetListDownloadTimeLabel(QFileInfo(file.fileName()).lastModified());
-    }
+    processDocsetList(*catalog);
 
-    processDocsetList(jsonDoc.array());
+    const QString cachePath = cacheLocation(DocsetListCacheFileName);
+    if (!writeDocsetCatalogCache(cachePath, replyData, &error)) {
+        qCWarning(log, "Could not write docset catalog cache '%s': %s", qPrintable(cachePath), qPrintable(error));
+        QMessageBox::warning(this,
+                             QStringLiteral("ZealRN"),
+                             tr("The docset catalog was updated, but its cache could not be saved.<br><br>%1")
+                                 .arg(error.toHtmlEscaped()));
+    } else {
+        const QFileInfo cacheInfo(cachePath);
+        qCInfo(log, "Saved docset catalog cache: path=%s bytes=%lld", qPrintable(cachePath), static_cast<long long>(cacheInfo.size()));
+        updateDocsetListDownloadTimeLabel(cacheInfo.lastModified());
+    }
 }
 
-void DocsetsDialog::processDocsetList(const QJsonArray &list)
+void DocsetsDialog::processDocsetList(const QList<Registry::DocsetMetadata> &list)
 {
-    for (const auto &v : list) {
-        const QJsonObject docsetJson = v.toObject();
-
-        const Registry::DocsetMetadata metadata(docsetJson);
-        if (metadata.name().isEmpty() || metadata.urls().isEmpty()) {
-            qCWarning(log, "Skipping invalid docset metadata entry.");
-            continue;
-        }
+    ui->availableDocsetList->clear();
+    m_availableDocsets.clear();
+    for (const Registry::DocsetMetadata &metadata : list) {
         m_availableDocsets.insert({metadata.name(), metadata});
     }
 
@@ -1005,9 +1032,7 @@ void DocsetsDialog::downloadDashDocset(const QModelIndex &index)
 
     QUrl url;
     if (!m_userFeeds.contains(name)) {
-        // No feed present means that this is a Kapeli docset
-        const QString urlString = QString(RedirectServerUrl).arg(QLatin1String("com.kapeli"), name);
-        url = QUrl(urlString);
+        url = m_availableDocsets[name].url();
     } else {
         url = m_userFeeds[name].url();
     }

@@ -96,7 +96,7 @@ private:
     void loadUserFeedList();
     void downloadDocsetList();
     void processDocsetListReply(QNetworkReply *reply);
-    void processDocsetList(const QJsonArray &list);
+    void processDocsetList(const QList<Registry::DocsetMetadata> &list);
     void updateDocsetListDownloadTimeLabel(const QDateTime &modifiedTime);
 
     void downloadDashDocset(const QModelIndex &index);

@@ -24,3 +24,15 @@ target_link_libraries(learningnotesexporter_test PRIVATE Ui LibArchive::LibArchi
 
 zeal_add_test(learningnotesexporter_test)
 set_tests_properties(learningnotesexporter_test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(docsetmetadata_test docsetmetadata_test.cpp)
+target_link_libraries(docsetmetadata_test PRIVATE Registry Qt6::Gui Qt6::Test)
+
+zeal_add_test(docsetmetadata_test)
+set_tests_properties(docsetmetadata_test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(docsetcatalog_test docsetcatalog_test.cpp)
+target_link_libraries(docsetcatalog_test PRIVATE Ui Qt6::Gui Qt6::Network Qt6::Test)
+
+zeal_add_test(docsetcatalog_test)
+set_tests_properties(docsetcatalog_test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")

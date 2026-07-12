@@ -54,6 +54,13 @@ DocsetMetadata::DocsetMetadata(const QJsonObject &jsonObject)
         m_urls.append(QUrl(vv.toString()));
     }
 
+    const QString sourceId = jsonObject[QStringLiteral("sourceId")].toString();
+    if (m_urls.isEmpty() && !sourceId.isEmpty() && !m_name.isEmpty()) {
+        const QString encodedSource = QString::fromLatin1(QUrl::toPercentEncoding(sourceId));
+        const QString encodedName = QString::fromLatin1(QUrl::toPercentEncoding(m_name));
+        m_urls.append(QUrl(QStringLiteral("https://go.zealdocs.org/d/%1/%2/latest").arg(encodedSource, encodedName)));
+    }
+
     m_extra = jsonObject[QStringLiteral("extra")].toObject();
 }
 
