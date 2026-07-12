@@ -220,15 +220,20 @@ std::optional<LearningNote> LearningNotesStore::note(const QString &docsetId, co
     return query.next() ? std::optional<LearningNote>(noteFromQuery(query)) : std::nullopt;
 }
 
-QList<LearningNote> LearningNotesStore::search(const QString &text)
+QList<LearningNote> LearningNotesStore::search(const QString &text, const QString &docsetName)
 {
     QSqlQuery query(m_database);
-    query.prepare(QStringLiteral("SELECT %1 FROM notes WHERE ? = '' OR page_title LIKE ? ESCAPE '\\' "
+    query.prepare(QStringLiteral("SELECT %1 FROM notes WHERE (? = '' OR docset_name = ?) AND "
+                                 "(? = '' OR page_title LIKE ? ESCAPE '\\' "
                                  "OR docset_name LIKE ? ESCAPE '\\' OR page_path LIKE ? ESCAPE '\\' "
-                                 "OR content LIKE ? ESCAPE '\\' ORDER BY updated_at DESC")
+                                 "OR content LIKE ? ESCAPE '\\') ORDER BY updated_at DESC")
                       .arg(QLatin1String(SelectColumns)));
     const QString pattern = likePattern(text);
-    query.addBindValue(text);
+    const QString boundDocset = docsetName.isNull() ? QStringLiteral("") : docsetName;
+    const QString boundText = text.isNull() ? QStringLiteral("") : text;
+    query.addBindValue(boundDocset);
+    query.addBindValue(boundDocset);
+    query.addBindValue(boundText);
     for (int i = 0; i < 4; ++i) {
         query.addBindValue(pattern);
     }

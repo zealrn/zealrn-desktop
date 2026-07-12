@@ -34,11 +34,12 @@ public:
 
 signals:
     void addSelectionRequested();
-    void allNotesRequested();
+    void openDocumentationRequested(const LearningNotePage &page);
 
 private:
     void setupUi();
     bool save(bool explicitSave);
+    void showAllNotes();
     void setStatus(const QString &status);
 
     std::unique_ptr<LearningNotesStore> m_store;

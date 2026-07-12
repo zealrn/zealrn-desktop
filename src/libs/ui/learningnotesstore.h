@@ -28,7 +28,7 @@ public:
 
     bool save(LearningNote *note);
     std::optional<LearningNote> note(const QString &docsetId, const QString &pageKey);
-    QList<LearningNote> search(const QString &text = {});
+    QList<LearningNote> search(const QString &text = {}, const QString &docsetName = {});
     bool remove(qint64 id);
 
 private:

@@ -3,6 +3,7 @@
 
 #include "learningnotespanel.h"
 
+#include "allnotesdialog.h"
 #include "learningnotesstore.h"
 
 #include <QCoreApplication>
@@ -107,7 +108,7 @@ void LearningNotesPanel::setupUi()
     connect(m_autoSaveTimer, &QTimer::timeout, this, [this]() { save(false); });
     connect(m_saveButton, &QPushButton::clicked, this, [this]() { save(true); });
     connect(m_addSelectionButton, &QPushButton::clicked, this, &LearningNotesPanel::addSelectionRequested);
-    connect(allNotesButton, &QPushButton::clicked, this, &LearningNotesPanel::allNotesRequested);
+    connect(allNotesButton, &QPushButton::clicked, this, &LearningNotesPanel::showAllNotes);
     auto *saveShortcut = new QShortcut(QKeySequence::Save, this);
     connect(saveShortcut, &QShortcut::activated, this, [this]() { save(true); });
 
@@ -207,6 +208,20 @@ bool LearningNotesPanel::save(bool explicitSave)
     m_editor->setToolTip({});
     setStatus(QCoreApplication::translate("LearningNotesPanel", "Saved"));
     return true;
+}
+
+void LearningNotesPanel::showAllNotes()
+{
+    if (!flush()) {
+        return;
+    }
+    AllNotesDialog dialog(m_store.get(), this);
+    connect(&dialog, &AllNotesDialog::openDocumentationRequested, this, &LearningNotesPanel::openDocumentationRequested);
+    dialog.exec();
+
+    const LearningNotePage page = m_note.page;
+    m_note = {};
+    setPage(page);
 }
 
 void LearningNotesPanel::setStatus(const QString &status)

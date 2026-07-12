@@ -20,6 +20,7 @@ private slots:
     void store_createsVersionedDatabase();
     void store_rollsBackFailedMigration();
     void store_savesLoadsSearchesAndDeletesUnicodeNote();
+    void store_searchesEveryFieldAndFiltersDocset();
 };
 
 void LearningNotesStoreTest::pageIdentity_ignoresServerAndAnchor()
@@ -124,6 +125,39 @@ void LearningNotesStoreTest::store_savesLoadsSearchesAndDeletesUnicodeNote()
 
     QVERIFY(store.remove(note.id));
     QVERIFY(!store.note(note.page.docsetId, note.page.pageKey).has_value());
+}
+
+void LearningNotesStoreTest::store_searchesEveryFieldAndFiltersDocset()
+{
+    QTemporaryDir dir;
+    LearningNotesStore store(dir.filePath(QStringLiteral("notes.sqlite")));
+    QVERIFY(store.isOpen());
+
+    LearningNote qt;
+    qt.page = {.docsetId = QStringLiteral("Qt_6"),
+               .docsetName = QStringLiteral("Qt 6"),
+               .pageKey = QStringLiteral("sql/query.html"),
+               .pagePath = QStringLiteral("sql/query.html"),
+               .pageUrl = QStringLiteral("http://localhost/Qt_6/sql/query.html"),
+               .pageTitle = QStringLiteral("Prepared Queries")};
+    qt.content = QStringLiteral("Bind values");
+    QVERIFY(store.save(&qt));
+
+    LearningNote git;
+    git.page = {.docsetId = QStringLiteral("Git"),
+                .docsetName = QStringLiteral("Git"),
+                .pageKey = QStringLiteral("query.html"),
+                .pagePath = QStringLiteral("query.html"),
+                .pageUrl = QStringLiteral("http://localhost/Git/query.html"),
+                .pageTitle = QStringLiteral("Query")};
+    git.content = QStringLiteral("Different content");
+    QVERIFY(store.save(&git));
+
+    QCOMPARE(store.search(QStringLiteral("Prepared")).size(), 1);
+    QCOMPARE(store.search(QStringLiteral("sql/query")).size(), 1);
+    QCOMPARE(store.search(QStringLiteral("Bind")).size(), 1);
+    QCOMPARE(store.search(QString(), QStringLiteral("Git")).size(), 1);
+    QCOMPARE(store.search(QStringLiteral("Query"), QStringLiteral("Qt 6")).size(), 1);
 }
 
 QTEST_MAIN(LearningNotesStoreTest)

@@ -131,6 +131,15 @@ MainWindow::MainWindow(Core::Application *app, QWidget *parent)
             m_learningNotesPanel->appendSelection(tab->webControl()->selectedText());
         }
     });
+    connect(m_learningNotesPanel,
+            &LearningNotesPanel::openDocumentationRequested,
+            this,
+            [this](const LearningNotePage &page) {
+                const Registry::Docset *docset = m_application->docsetRegistry()->docset(page.docsetId);
+                if (docset != nullptr) {
+                    createTab(docset->baseUrl().resolved(QUrl(page.pagePath)));
+                }
+            });
 
     // Setup splitter.
     m_splitter->insertWidget(0, sb);

@@ -8,6 +8,7 @@ set(Ui_FORMS
 )
 
 add_library(Ui STATIC
+    allnotesdialog.cpp
     aboutdialog.cpp
     browsertab.cpp
     developerterminalpanel.cpp
