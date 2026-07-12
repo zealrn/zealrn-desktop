@@ -18,6 +18,7 @@ CMakeUserPresets.json
 # AppImage
 *.AppImage
 *.AppImage.zsync
+dist/
 
 # WiX Toolset
 *.msi

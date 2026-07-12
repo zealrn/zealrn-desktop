@@ -6,7 +6,7 @@ repo_dir="$(cd "${script_dir}/.." && pwd)"
 
 image="${ZEALRN_DOCKER_IMAGE:-zealrn-ubuntu24-qt:latest}"
 container_name="${ZEALRN_PREVIEW_CONTAINER:-zealrn-preview}"
-app_binary="${ZEALRN_PREVIEW_BINARY:-./build/release/zeal}"
+app_binary="${ZEALRN_PREVIEW_BINARY:-./build/release/zealrn}"
 preview_dir="${repo_dir}/.zealrn-preview"
 
 flatpak_docsets="${HOME}/.var/app/org.zealdocs.Zeal/data/Zeal/Zeal/docsets"
@@ -20,7 +20,7 @@ elif [[ -d "${native_docsets}" ]]; then
 fi
 
 container_data="/preview/data"
-container_docsets="${container_data}/Zeal/Zeal/docsets"
+container_docsets="${container_data}/abnzrdev/ZealRN/docsets"
 
 if [[ ! -x "${repo_dir}/${app_binary#./}" ]]; then
     echo "Missing preview binary: ${repo_dir}/${app_binary#./}" >&2
@@ -39,7 +39,7 @@ fi
 
 mkdir -p \
     "${preview_dir}/config" \
-    "${preview_dir}/data/Zeal/Zeal" \
+    "${preview_dir}/data/abnzrdev/ZealRN" \
     "${preview_dir}/cache"
 
 docker_args=(

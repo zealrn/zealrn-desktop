@@ -101,12 +101,25 @@ elseif(WIN32)
 elseif(UNIX)
     include(GNUInstallDirs)
     install(TARGETS App DESTINATION ${CMAKE_INSTALL_BINDIR})
+    install(FILES "${CMAKE_SOURCE_DIR}/COPYING"
+            DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/doc/zealrn")
+    install(FILES "${CMAKE_SOURCE_DIR}/tools/playground/THIRD_PARTY_LICENSES.md"
+            DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/doc/zealrn")
 endif()
 
 #
 # CPack configuration.
 #
 set(CPACK_GENERATOR "7Z;ZIP")
+if(UNIX AND NOT APPLE)
+    list(APPEND CPACK_GENERATOR "DEB")
+    set(CPACK_DEBIAN_FILE_NAME "zealrn_0.1.0-alpha_amd64.deb")
+    set(CPACK_DEBIAN_PACKAGE_VERSION "0.1.0~alpha")
+    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "ZealRN contributors")
+    set(CPACK_DEBIAN_PACKAGE_SECTION "devel")
+    set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libqt6sql6-sqlite")
+endif()
 
 set(CPACK_VERBATIM_VARIABLES YES)
 
@@ -145,6 +158,7 @@ set(CPACK_PACKAGE_EXECUTABLES ${_project_output_name} ${CPACK_PACKAGE_NAME})
 set(CPACK_CREATE_DESKTOP_LINKS ${_project_output_name} ${CPACK_PACKAGE_NAME})
 
 set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README.md")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/COPYING")
 
 if(WIN32)
     # CPack WiX configuration.
