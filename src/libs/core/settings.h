@@ -108,6 +108,7 @@ public:
 
     // Helper functions.
     bool isDarkModeEnabled() const;
+    bool isDocumentationThemeRestartRequired() const;
     bool isTrayActive() const;
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
@@ -136,6 +137,8 @@ private:
     static void migrate(QSettings *settings);
 
     static std::unique_ptr<QSettings> qsettings();
+
+    bool m_startupDarkMode = false;
 };
 
 } // namespace Zeal::Core

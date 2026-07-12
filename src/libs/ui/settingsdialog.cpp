@@ -201,6 +201,9 @@ void SettingsDialog::loadSettings()
         ui->appearanceDarkRadioButton->setChecked(true);
         break;
     }
+#if QT_VERSION < QT_VERSION_CHECK(6, 7, 0)
+    ui->appearanceRestartLabel->setVisible(settings->isDocumentationThemeRestartRequired());
+#endif
 
     ui->highlightOnNavigateCheckBox->setChecked(settings->isHighlightOnNavigateEnabled);
     ui->customCssFileEdit->setText(QDir::toNativeSeparators(settings->customCssFile));
@@ -270,11 +273,6 @@ void SettingsDialog::saveSettings()
     settings->isFuzzySearchEnabled = ui->fuzzySearchCheckBox->isChecked();
 
     // Content Tab
-#if QT_VERSION < QT_VERSION_CHECK(6, 7, 0)
-    // Applying dark mode requires restart.
-    ui->appearanceLabel->setText(tr("Appearance (requires restart):"));
-#endif
-
     settings->defaultFontFamily = ui->defaultFontComboBox->currentData().toString();
     settings->serifFontFamily = ui->serifFontComboBox->currentText();
     settings->sansSerifFontFamily = ui->sansSerifFontComboBox->currentText();
@@ -291,6 +289,9 @@ void SettingsDialog::saveSettings()
     } else if (ui->appearanceDarkRadioButton->isChecked()) {
         settings->contentAppearance = Core::Settings::ContentAppearance::Dark;
     }
+#if QT_VERSION < QT_VERSION_CHECK(6, 7, 0)
+    ui->appearanceRestartLabel->setVisible(settings->isDocumentationThemeRestartRequired());
+#endif
 
     settings->isHighlightOnNavigateEnabled = ui->highlightOnNavigateCheckBox->isChecked();
     settings->customCssFile = QDir::fromNativeSeparators(ui->customCssFileEdit->text());

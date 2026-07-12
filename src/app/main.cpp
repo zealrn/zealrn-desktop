@@ -5,17 +5,21 @@
 #include <core/application.h>
 #include <core/applicationsingleton.h>
 #include <core/httpserver.h>
+#include <core/settings.h>
 #include <registry/searchquery.h>
 #include <ui/widgets/proxystyle.h>
 #include <ui/windowmanager.h>
 
 #include <QApplication>
 #include <QCommandLineParser>
+#include <QColor>
 #include <QDataStream>
 #include <QDesktopServices>
 #include <QDir>
 #include <QIcon>
 #include <QMessageBox>
+#include <QPalette>
+#include <QStyle>
 #include <QStyleFactory>
 #include <QStyleHints>
 #include <QTextStream>
@@ -24,7 +28,6 @@
 
 #ifdef Q_OS_WINDOWS
 #include <QAbstractNativeEventFilter>
-#include <QPalette>
 #include <QSettings>
 #include <qt_windows.h>
 
@@ -45,6 +48,76 @@ namespace {
 // See net/base/port_util.cc (kRestrictedPorts) in Chromium.
 constexpr std::array<quint16, 17> BrowserRestrictedPorts =
     {1719, 1720, 1723, 2049, 3659, 4045, 5060, 5061, 6000, 6566, 6665, 6666, 6667, 6668, 6669, 6697, 10080};
+
+bool isDarkPalette(const QPalette &palette)
+{
+    return palette.color(QPalette::WindowText).lightness() > palette.color(QPalette::Window).lightness();
+}
+
+QPalette fallbackPalette(bool dark)
+{
+    const QColor window = dark ? QColor(53, 53, 53) : QColor(240, 240, 240);
+    const QColor base = dark ? QColor(35, 35, 35) : QColor(Qt::white);
+    const QColor alternateBase = dark ? QColor(45, 45, 45) : QColor(245, 245, 245);
+    const QColor text = dark ? QColor(242, 242, 242) : QColor(32, 32, 32);
+    const QColor disabledText = dark ? QColor(150, 150, 150) : QColor(112, 112, 112);
+    const QColor placeholderText = dark ? QColor(170, 170, 170) : QColor(96, 96, 96);
+    const QColor highlight = dark ? QColor(42, 130, 218) : QColor(48, 140, 198);
+
+    QPalette palette(window);
+    palette.setColor(QPalette::Window, window);
+    palette.setColor(QPalette::WindowText, text);
+    palette.setColor(QPalette::Base, base);
+    palette.setColor(QPalette::AlternateBase, alternateBase);
+    palette.setColor(QPalette::ToolTipBase, base);
+    palette.setColor(QPalette::ToolTipText, text);
+    palette.setColor(QPalette::Text, text);
+    palette.setColor(QPalette::Button, window);
+    palette.setColor(QPalette::ButtonText, text);
+    palette.setColor(QPalette::BrightText, Qt::red);
+    palette.setColor(QPalette::Link, dark ? QColor(93, 169, 233) : QColor(0, 102, 204));
+    palette.setColor(QPalette::LinkVisited, dark ? QColor(183, 132, 214) : QColor(85, 26, 139));
+    palette.setColor(QPalette::Highlight, highlight);
+    palette.setColor(QPalette::HighlightedText, Qt::white);
+    palette.setColor(QPalette::PlaceholderText, placeholderText);
+    palette.setColor(QPalette::Mid, dark ? QColor(75, 75, 75) : QColor(184, 184, 184));
+
+    for (const auto role : {QPalette::WindowText, QPalette::Text, QPalette::ButtonText}) {
+        palette.setColor(QPalette::Disabled, role, disabledText);
+    }
+    palette.setColor(QPalette::Disabled, QPalette::PlaceholderText, disabledText);
+
+    return palette;
+}
+
+void applyApplicationAppearance(const Zeal::Core::Settings &settings, const QString &systemStyleName)
+{
+    QStyle *baseStyle = nullptr;
+#if defined(Q_OS_WINDOWS) && (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
+    const auto osName = QSysInfo::prettyProductName();
+    if (osName.startsWith("Windows 10") || osName.startsWith("Windows 11")) {
+        baseStyle = QStyleFactory::create(QStringLiteral("fusion"));
+    }
+#endif
+    if (baseStyle == nullptr) {
+        baseStyle = QStyleFactory::create(systemStyleName);
+    }
+
+    QApplication::setStyle(new Zeal::WidgetUi::ProxyStyle(baseStyle));
+    QApplication::setPalette(QApplication::style()->standardPalette());
+
+    if (settings.contentAppearance == Zeal::Core::Settings::ContentAppearance::Automatic) {
+        return;
+    }
+
+    const bool dark = settings.isDarkModeEnabled();
+    if (isDarkPalette(QApplication::palette()) == dark) {
+        return;
+    }
+
+    QApplication::setStyle(new Zeal::WidgetUi::ProxyStyle(QStyleFactory::create(QStringLiteral("fusion"))));
+    QApplication::setPalette(fallbackPalette(dark));
+}
 
 #if defined(Q_OS_WINDOWS) && QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
 // Windows fills new window client areas with COLOR_WINDOW (always white, even in dark mode)
@@ -280,40 +353,10 @@ int main(int argc, char *argv[])
     }
 
     QApplication qapp(argc, argv);
-
-    // Install ProxyStyle so restyled primitives (e.g. the tab bar close button) use
-    // Tabler glyphs like the rest of the UI. On Windows 10 & 11 base it on Fusion,
-    // which enables proper dark mode support.
-    // See https://www.qt.io/blog/dark-mode-on-windows-11-with-qt-6.5.
-    // Re-installing the style whenever the color scheme changes re-derives the
-    // platform palette and runs the full widget unpolish/polish cycle; Settings
-    // only sets the scheme (a plain setColorScheme/setPalette does not repaint
-    // widgets like the tab bar, search box, and tree views).
-    // TODO: Make style configurable, detect -style argument.
-    const auto applyApplicationStyle = []() {
-        QStyle *baseStyle = nullptr;
-#if defined(Q_OS_WINDOWS) && (QT_VERSION >= QT_VERSION_CHECK(6, 5, 0))
-        const auto osName = QSysInfo::prettyProductName();
-        if (osName.startsWith("Windows 10") || osName.startsWith("Windows 11")) {
-            baseStyle = QStyleFactory::create(QStringLiteral("fusion"));
-        }
-#endif
-        QApplication::setStyle(new Zeal::WidgetUi::ProxyStyle(baseStyle));
-        // The analyzer reports a leak at this scope exit; QApplication::setStyle() owns the style.
-        // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
-    };
-    applyApplicationStyle();
-#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
-    QObject::connect(QApplication::styleHints(), &QStyleHints::colorSchemeChanged, &qapp, [applyApplicationStyle]() {
-        applyApplicationStyle();
-    });
-#endif
+    const QString systemStyleName = QApplication::style()->objectName();
 
 #if defined(Q_OS_WINDOWS) && QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
     DarkModeEraseFilter darkModeEraseFilter;
-    if (QApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark) {
-        qapp.installNativeEventFilter(&darkModeEraseFilter);
-    }
 #endif
 
     const CommandLineParameters clParams = parseCommandLine(QApplication::arguments());
@@ -364,6 +407,26 @@ int main(int argc, char *argv[])
 
     using Zeal::Core::Application;
     Application app(clParams.httpServerPort);
+
+    const auto applyAppearance = [&app, systemStyleName]() {
+        applyApplicationAppearance(*app.settings(), systemStyleName);
+    };
+    QObject::connect(app.settings(), &Zeal::Core::Settings::updated, &qapp, applyAppearance);
+    applyAppearance();
+
+#if defined(Q_OS_WINDOWS) && QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+    const auto applyWindowsDarkModeFilter = [&app, &qapp, &darkModeEraseFilter]() {
+        qapp.removeNativeEventFilter(&darkModeEraseFilter);
+        if (app.settings()->isDarkModeEnabled()) {
+            qapp.installNativeEventFilter(&darkModeEraseFilter);
+        }
+    };
+    QObject::connect(app.settings(),
+                     &Zeal::Core::Settings::updated,
+                     &qapp,
+                     applyWindowsDarkModeFilter);
+    applyWindowsDarkModeFilter();
+#endif
 
     if (!app.httpServer()->isListening()) {
         showStartupError(

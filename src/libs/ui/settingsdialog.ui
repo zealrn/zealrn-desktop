@@ -274,7 +274,7 @@
             <item>
              <widget class="QRadioButton" name="appearanceAutoRadioButton">
               <property name="text">
-               <string>A&amp;utomatic</string>
+               <string>&amp;System</string>
               </property>
               <property name="checked">
                <bool>true</bool>
@@ -309,6 +309,19 @@
              </spacer>
             </item>
            </layout>
+          </item>
+          <item>
+           <widget class="QLabel" name="appearanceRestartLabel">
+            <property name="visible">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Restart ZealRN to apply the theme to documentation pages.</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+           </widget>
           </item>
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout">

@@ -9,6 +9,7 @@
 #include <QCompleter>
 #include <QKeyEvent>
 #include <QLabel>
+#include <QPalette>
 #include <QStyle>
 #include <QStyleOptionFrame>
 #include <QTimer>
@@ -27,7 +28,7 @@ SearchEdit::SearchEdit(QWidget *parent)
     m_completionLabel = new QLabel(this);
     m_completionLabel->setFont(font());
     m_completionLabel->setObjectName(QStringLiteral("completer"));
-    m_completionLabel->setStyleSheet(QStringLiteral("QLabel#completer { color: gray; }"));
+    m_completionLabel->setForegroundRole(QPalette::PlaceholderText);
 
     connect(this, &SearchEdit::textChanged, this, &SearchEdit::showCompletions);
 }

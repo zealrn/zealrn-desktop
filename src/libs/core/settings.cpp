@@ -48,17 +48,17 @@ Settings::Settings(QObject *parent)
     qRegisterMetaType<ContentAppearance>("ContentAppearance");
     qRegisterMetaType<ExternalLinkPolicy>("ExternalLinkPolicy");
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
-    // When the OS color scheme changes, reapply the color scheme.
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+    // Notify application and web views when the system appearance changes.
     connect(qApp->styleHints(), &QStyleHints::colorSchemeChanged, this, [this]() {
         if (contentAppearance == ContentAppearance::Automatic) {
-            applyColorScheme();
             emit updated();
         }
     });
 #endif
 
     load();
+    m_startupDarkMode = isDarkModeEnabled();
 }
 
 Settings::~Settings()
@@ -77,6 +77,15 @@ bool Settings::isDarkModeEnabled() const
     }
 
     return false;
+}
+
+bool Settings::isDocumentationThemeRestartRequired() const
+{
+#if QT_VERSION < QT_VERSION_CHECK(6, 7, 0)
+    return m_startupDarkMode != isDarkModeEnabled();
+#else
+    return false;
+#endif
 }
 
 bool Settings::isTrayActive() const
@@ -114,12 +123,13 @@ Settings::ColorScheme Settings::colorScheme()
     return QApplication::styleHints()->colorScheme();
 #else
     // Pre Qt 6.5 detection from https://www.qt.io/blog/dark-mode-on-windows-11-with-qt-6.5.
-    const QPalette p;
-    if (p.color(QPalette::WindowText).lightness() > p.color(QPalette::Window).lightness()) {
-        return ColorScheme::Dark;
-    }
-
-    return ColorScheme::Light;
+    static const ColorScheme scheme = []() {
+        const QPalette p;
+        return p.color(QPalette::WindowText).lightness() > p.color(QPalette::Window).lightness()
+                   ? ColorScheme::Dark
+                   : ColorScheme::Light;
+    }();
+    return scheme;
 #endif
 }
 
@@ -163,6 +173,15 @@ void Settings::load()
 
     contentAppearance = settings->value(QStringLiteral("appearance"), QVariant::fromValue(ContentAppearance::Automatic))
                             .value<ContentAppearance>();
+    switch (contentAppearance) {
+    case ContentAppearance::Automatic:
+    case ContentAppearance::Light:
+    case ContentAppearance::Dark:
+        break;
+    default:
+        contentAppearance = ContentAppearance::Automatic;
+        break;
+    }
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 7, 0)
     // Dark mode needs to be applied before Qt WebEngine is initialized.
@@ -430,7 +449,17 @@ QDataStream &operator>>(QDataStream &in, Zeal::Core::Settings::ContentAppearance
 {
     std::underlying_type_t<Zeal::Core::Settings::ContentAppearance> value = 0;
     in >> value;
-    policy = static_cast<Zeal::Core::Settings::ContentAppearance>(value);
+    using Appearance = Zeal::Core::Settings::ContentAppearance;
+    switch (static_cast<Appearance>(value)) {
+    case Appearance::Automatic:
+    case Appearance::Light:
+    case Appearance::Dark:
+        policy = static_cast<Appearance>(value);
+        break;
+    default:
+        policy = Appearance::Automatic;
+        break;
+    }
     return in;
 }
 
