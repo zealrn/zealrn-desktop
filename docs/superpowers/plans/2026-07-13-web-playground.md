@@ -48,10 +48,10 @@
 
 **Modify:** `src/libs/ui/webplaygroundpanel.h/.cpp`, UI CMake.
 
-- [ ] Add independent off-the-record profile, interceptor, restricted page, and preview view.
-- [ ] Add fixed base64 render calls, manual Run, 600 ms Auto Run, stale-run cancellation, Stop, and Reset.
-- [ ] Capture bounded console/error output and implement Clear Console.
-- [ ] Verify request blocking and malformed input, build/test, review, and commit.
+- [x] Add independent off-the-record profile, interceptor, restricted page, and preview view.
+- [x] Add fixed base64 render calls, manual Run, 600 ms Auto Run, stale-run cancellation, Stop, and Reset.
+- [x] Capture bounded and throttled console/error output and implement Clear Console.
+- [x] Verify request blocking and difficult input composition, build/test, review, and commit.
 
 ## Task 5: Theme, Open, And Export
 

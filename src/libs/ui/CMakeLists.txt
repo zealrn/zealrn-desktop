@@ -20,6 +20,7 @@ add_library(Ui STATIC
     sidebarviewprovider.cpp
     webplaygroundeditor.cpp
     webplaygroundpanel.cpp
+    webplaygroundpreview.cpp
     webplaygroundproject.cpp
     windowmanager.cpp
     ${Ui_FORMS} # For Qt Creator.

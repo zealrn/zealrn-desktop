@@ -56,6 +56,7 @@ void WebPlaygroundTest::blockedSchemes_data()
     QTest::newRow("websocket") << QStringLiteral("wss://example.com") << true;
     QTest::newRow("file") << QStringLiteral("file:///tmp/private") << true;
     QTest::newRow("resource") << QStringLiteral("qrc:/playground/preview.html") << false;
+    QTest::newRow("other resource") << QStringLiteral("qrc:/browser/new-tab.html") << true;
     QTest::newRow("data") << QStringLiteral("data:text/plain,ok") << false;
     QTest::newRow("blob") << QStringLiteral("blob:null/id") << false;
 }

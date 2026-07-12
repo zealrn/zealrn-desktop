@@ -50,7 +50,11 @@ bool isBlockedPreviewUrl(const QUrl &url)
                                         QStringLiteral("ws"),
                                         QStringLiteral("wss"),
                                         QStringLiteral("file")};
-    return blocked.contains(url.scheme(), Qt::CaseInsensitive);
+    if (blocked.contains(url.scheme(), Qt::CaseInsensitive)) {
+        return true;
+    }
+    return url.scheme().compare(QStringLiteral("qrc"), Qt::CaseInsensitive) == 0
+           && url != QUrl(QStringLiteral("qrc:/playground/preview.html"));
 }
 
 void appendBounded(QStringList &messages, const QString &message, qsizetype maximum)
