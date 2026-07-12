@@ -44,3 +44,8 @@ CMakeUserPresets.json
 
 # DotENV
 .env
+
+# Local Docker preview state
+.zealrn-preview/
+.zealrn-path-probe/
+.zealrn-preview-*/
