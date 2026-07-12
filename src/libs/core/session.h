@@ -15,6 +15,7 @@ struct WindowState final
     QByteArray geometry;
     QByteArray splitterState;
     QByteArray tocSplitterState;
+    QByteArray mainWindowState;
 };
 
 struct Session final

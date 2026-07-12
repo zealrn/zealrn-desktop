@@ -53,6 +53,7 @@ void SessionTest::saveThenLoad_roundTrip()
     const QByteArray geom = QByteArray::fromHex("0102030405deadbeef");
     const QByteArray splitter = QByteArray::fromHex("aabbccdd");
     const QByteArray tocSplitter = QByteArray::fromHex("cafebabe");
+    const QByteArray mainWindowState = QByteArray::fromHex("010203aabbcc");
 
     {
         Session out;
@@ -60,6 +61,7 @@ void SessionTest::saveThenLoad_roundTrip()
         ws.geometry = geom;
         ws.splitterState = splitter;
         ws.tocSplitterState = tocSplitter;
+        ws.mainWindowState = mainWindowState;
         out.windows.append(ws);
         out.saveToFile(path);
     }
@@ -70,6 +72,7 @@ void SessionTest::saveThenLoad_roundTrip()
     QCOMPARE(in.windows.first().geometry, geom);
     QCOMPARE(in.windows.first().splitterState, splitter);
     QCOMPARE(in.windows.first().tocSplitterState, tocSplitter);
+    QCOMPARE(in.windows.first().mainWindowState, mainWindowState);
 }
 
 void SessionTest::loadCorruptFile_usesDefaults()
@@ -120,6 +123,7 @@ void SessionTest::loadPartialFile_missingKeysUseDefaults()
     QCOMPARE(session.windows.first().geometry, QByteArray::fromHex("01020304"));
     QCOMPARE(session.windows.first().splitterState, QByteArray());
     QCOMPARE(session.windows.first().tocSplitterState, QByteArray());
+    QCOMPARE(session.windows.first().mainWindowState, QByteArray());
 }
 
 void SessionTest::load_migratesFromLegacyQSettings()

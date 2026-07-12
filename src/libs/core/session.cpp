@@ -21,6 +21,7 @@ Q_LOGGING_CATEGORY(log, "zeal.core.session")
 
 constexpr std::string_view ArrayWindows = "windows";
 constexpr std::string_view KeyGeometry = "geometry";
+constexpr std::string_view KeyMainWindowState = "main_window_state";
 constexpr std::string_view KeySplitter = "splitter";
 constexpr std::string_view KeyTocSplitter = "toc_splitter";
 
@@ -174,6 +175,7 @@ void Session::loadFromFile(const QString &path)
 
         WindowState ws;
         ws.geometry = readBlob(*tbl, KeyGeometry);
+        ws.mainWindowState = readBlob(*tbl, KeyMainWindowState);
         ws.splitterState = readBlob(*tbl, KeySplitter);
         ws.tocSplitterState = readBlob(*tbl, KeyTocSplitter);
         windows.append(ws);
@@ -188,6 +190,7 @@ bool Session::saveToFile(const QString &path) const
     for (const WindowState &ws : windows) {
         toml::table tbl;
         writeBlob(tbl, KeyGeometry, ws.geometry);
+        writeBlob(tbl, KeyMainWindowState, ws.mainWindowState);
         writeBlob(tbl, KeySplitter, ws.splitterState);
         writeBlob(tbl, KeyTocSplitter, ws.tocSplitterState);
         windowsArray.push_back(std::move(tbl));

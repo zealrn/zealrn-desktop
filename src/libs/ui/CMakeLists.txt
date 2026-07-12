@@ -18,6 +18,7 @@ add_library(Ui STATIC
     searchsidebar.cpp
     settingsdialog.cpp
     sidebarviewprovider.cpp
+    webplaygroundpanel.cpp
     windowmanager.cpp
     ${Ui_FORMS} # For Qt Creator.
 )

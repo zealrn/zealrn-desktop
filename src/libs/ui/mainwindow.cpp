@@ -11,6 +11,7 @@
 #include "searchsidebar.h"
 #include "settingsdialog.h"
 #include "sidebarviewprovider.h"
+#include "webplaygroundpanel.h"
 #include "widgets/iconhelper.h"
 #include "widgets/tabbar.h"
 
@@ -28,6 +29,7 @@
 #include <QApplication>
 #include <QCloseEvent>
 #include <QDesktopServices>
+#include <QDockWidget>
 #include <QFocusEvent>
 #include <QIcon>
 #include <QKeyEvent>
@@ -46,6 +48,7 @@ namespace Zeal::WidgetUi {
 namespace {
 constexpr int DefaultSidebarWidth = 180;
 constexpr int DefaultLearningNotesWidth = 300;
+constexpr int MainWindowStateVersion = 1;
 constexpr int MinimumLearningNotesWidth = 240;
 } // namespace
 
@@ -60,6 +63,15 @@ MainWindow::MainWindow(Core::Application *app, QWidget *parent)
     setWindowTitle(tr("Zeal Portable"));
 #endif
     resize(900, 600); // Default size. May be overridden by restoreGeometry.
+
+    m_webPlaygroundDock = new QDockWidget(tr("Web Playground"), this);
+    m_webPlaygroundDock->setObjectName(QStringLiteral("webPlaygroundDock"));
+    m_webPlaygroundDock->setAllowedAreas(Qt::BottomDockWidgetArea);
+    auto *webPlaygroundPanel = new WebPlaygroundPanel(m_webPlaygroundDock);
+    m_webPlaygroundDock->setWidget(webPlaygroundPanel);
+    addDockWidget(Qt::BottomDockWidgetArea, m_webPlaygroundDock);
+    m_webPlaygroundDock->hide();
+    connect(webPlaygroundPanel, &WebPlaygroundPanel::closeRequested, m_webPlaygroundDock, &QDockWidget::hide);
 
     setupMainMenu();
     setupShortcuts();
@@ -113,6 +125,10 @@ MainWindow::MainWindow(Core::Application *app, QWidget *parent)
     if (!isSplitterStateRestored || splitterSizes.size() != 3 || splitterSizes.at(2) < MinimumLearningNotesWidth) {
         applyDefaultSplitterSizes();
     }
+    if (windowState.mainWindowState.isEmpty()
+        || !restoreState(windowState.mainWindowState, MainWindowStateVersion)) {
+        m_webPlaygroundDock->hide();
+    }
     sb->setVisible(m_showSidebarAction->isChecked());
 
     // Setup web settings.
@@ -138,6 +154,7 @@ MainWindow::MainWindow(Core::Application *app, QWidget *parent)
 MainWindow::~MainWindow()
 {
     Core::WindowState &windowState = m_application->session()->primaryWindow();
+    windowState.mainWindowState = saveState(MainWindowStateVersion);
     windowState.splitterState = m_splitter->saveState();
     windowState.geometry = saveGeometry();
 }
@@ -451,6 +468,11 @@ void MainWindow::setupMainMenu()
         m_settings->hideSidebar = !checked;
         m_settings->save();
     });
+
+    action = m_webPlaygroundDock->toggleViewAction();
+    action->setText(tr("Web &Playground"));
+    menu->addAction(action);
+    addAction(action);
 
     menu->addSeparator();
 

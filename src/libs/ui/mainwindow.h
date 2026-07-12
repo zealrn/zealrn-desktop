@@ -11,6 +11,7 @@
 class QxtGlobalShortcut;
 
 class QAction;
+class QDockWidget;
 class QMenuBar;
 class QSplitter;
 class QStackedWidget;
@@ -89,6 +90,7 @@ private:
 
     QSplitter *m_splitter = nullptr;
     QStackedWidget *m_webViewStack = nullptr;
+    QDockWidget *m_webPlaygroundDock = nullptr;
 
     // TODO: Replace with proper action manager.
     QAction *m_showDocsetManagerAction = nullptr;
