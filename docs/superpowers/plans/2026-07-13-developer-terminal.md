@@ -30,10 +30,10 @@
 **Interfaces:**
 - Produces: `availableShells()`, `validatedShell()`, `validatedWorkingDirectory()`, `externalTerminalLaunch()`, and `BottomTool` validation helpers.
 
-- [ ] Write tests for valid/invalid saved shells, home/workspace directory fallback, Linux/Windows external launch argument construction, and invalid selected-tool fallback.
-- [ ] Run the focused test and confirm it fails before implementation.
-- [ ] Implement the minimum pure helpers using `QStandardPaths`, `QFileInfo`, and `QProcessEnvironment`.
-- [ ] Run the focused test and full suite, review the diff, and commit `test: add developer terminal support rules`.
+- [x] Write tests for valid/invalid saved shells, home/workspace directory fallback, Linux/Windows external launch argument construction, and invalid selected-tool fallback.
+- [x] Run the focused test and confirm it fails before implementation.
+- [x] Implement the minimum pure helpers using `QStandardPaths`, `QFileInfo`, and `QProcessEnvironment`.
+- [x] Run the focused test and full suite, review the diff, and commit `test: add developer terminal support rules`.
 
 ### Task 2: Shared Panel And Dock Integration
 
@@ -53,12 +53,12 @@
 - Produces: `DeveloperTerminalPanel`, `TerminalBackend`, and lazy `createTerminalBackend()`.
 - Consumes: terminal support helpers from Task 1.
 
-- [ ] Add failing settings tests for acknowledgement, shell, working directory, and invalid bottom-tool restoration.
-- [ ] Persist the four values through the existing UI settings group.
-- [ ] Implement the platform-neutral panel, safety acknowledgement, shell/directory controls, status, and unavailable state without starting a process in its constructor.
-- [ ] Replace the dock content with Web Playground and Developer Terminal tabs while preserving `webPlaygroundDock`, dock state restoration, and first-launch hidden behavior.
-- [ ] Add checkable View actions that reveal/select their tool and keep their state synchronized.
-- [ ] Build, run all tests, smoke-test restoration, review, and commit `feat: add developer terminal shell`.
+- [x] Add failing settings tests for acknowledgement, shell, working directory, and invalid bottom-tool restoration.
+- [x] Persist the four values through the existing UI settings group.
+- [x] Implement the platform-neutral panel, safety acknowledgement, shell/directory controls, status, and unavailable state without starting a process in its constructor.
+- [x] Replace the dock content with Web Playground and Developer Terminal tabs while preserving `webPlaygroundDock`, dock state restoration, and first-launch hidden behavior.
+- [x] Add checkable View actions that reveal/select their tool and keep their state synchronized.
+- [x] Build, run all tests, smoke-test restoration, review, and commit `feat: add developer terminal shell`.
 
 ### Task 3: Optional Linux QTermWidget Backend
 
@@ -73,11 +73,11 @@
 - Produces: PTY-backed `TerminalBackend` when CMake finds target `qtermwidget6`.
 - Consumes: selected executable and working directory from `DeveloperTerminalPanel`.
 
-- [ ] Add `ZEALRN_ENABLE_TERMINAL`, guarded source selection, quiet `qtermwidget6` discovery, and `ZEALRN_HAVE_QTERMWIDGET`.
-- [ ] Wrap QTermWidget start, clear, copy, paste, finished, history, scrollbar, inherited environment, and theme operations.
-- [ ] Ensure deleting the backend closes the session and that hiding the dock preserves it.
-- [ ] Document the optional Qt 6 QTermWidget dependency and external fallback.
-- [ ] Validate both terminal-disabled and no-QTermWidget builds, then validate an embedded build only if a compatible package is available; review and commit `feat: add linux terminal backend`.
+- [x] Add `ZEALRN_ENABLE_TERMINAL`, guarded source selection, quiet `qtermwidget6` discovery, and `ZEALRN_HAVE_QTERMWIDGET`.
+- [x] Wrap QTermWidget start, clear, copy, paste, finished, history, scrollbar, inherited environment, and theme operations.
+- [x] Ensure deleting the backend closes the session and that hiding the dock preserves it.
+- [x] Document the optional Qt 6 QTermWidget dependency and external fallback.
+- [x] Validate both terminal-disabled and no-QTermWidget builds, then validate an embedded build only if a compatible package is available; review and commit `feat: add linux terminal backend`.
 
 ### Task 4: Windows And Unsupported Fallbacks
 
@@ -91,18 +91,28 @@
 **Interfaces:**
 - Produces: guarded Windows backend with shell detection and external launching; unsupported platforms return the unavailable backend.
 
-- [ ] Keep Windows headers in the Windows source only and compile it only under `WIN32`.
-- [ ] Report embedded ConPTY as unavailable until a tested terminal renderer exists; do not claim runtime support.
-- [ ] Verify Windows launch specifications use separate executable/arguments and selected working directory.
-- [ ] Run Linux tests proving Windows-only symbols do not leak; use existing Windows CI configuration for future compile coverage.
-- [ ] Review and commit `feat: add windows terminal fallback`.
+- [x] Keep Windows headers in the Windows source only and compile it only under `WIN32`.
+- [x] Report embedded ConPTY as unavailable until a tested terminal renderer exists; do not claim runtime support.
+- [x] Verify Windows launch specifications use separate executable/arguments and selected working directory.
+- [x] Run Linux tests proving Windows-only symbols do not leak; use existing Windows CI configuration for future compile coverage.
+- [x] Review and commit `feat: add windows terminal fallback`.
 
 ### Task 5: Final Validation
 
-- [ ] Configure/build Release with terminal enabled but QTermWidget absent.
-- [ ] Configure/build Testing and run `ctest --preset testing --output-on-failure`.
-- [ ] Configure/build once with `-DZEALRN_ENABLE_TERMINAL=OFF` and verify the unavailable UI path.
-- [ ] Run Xvfb checks for dock tabs/actions, lazy initialization, acknowledgement, directory persistence, theme switching, hide/show, and external fallback.
-- [ ] If compatible QTermWidget is available, run prompt, ANSI, Ctrl+C, resize, working directory, shell exit, and shutdown checks; otherwise record the exact limitation.
-- [ ] Confirm documentation, Learning Notes, and Web Playground remain usable.
-- [ ] Finish with a clean tracked tree and `.codegraph/` untracked.
+- [x] Configure/build Release with terminal enabled but QTermWidget absent.
+- [x] Configure/build Testing and run `ctest --preset testing --output-on-failure`.
+- [x] Configure/build once with `-DZEALRN_ENABLE_TERMINAL=OFF` and verify the unavailable UI path.
+- [x] Run Xvfb checks for dock tabs/actions, lazy initialization, acknowledgement, directory persistence, theme switching, hide/show, and external fallback.
+- [x] If compatible QTermWidget is available, run prompt, ANSI, Ctrl+C, resize, working directory, shell exit, and shutdown checks; otherwise record the exact limitation.
+- [x] Confirm documentation, Learning Notes, and Web Playground remain usable.
+- [x] Finish with a clean tracked tree and `.codegraph/` untracked.
+
+## Validation Result
+
+- Ubuntu 24.04 Release and Testing builds passed with Qt 6.4.2 and the external-terminal fallback.
+- All 8 test executables passed; `DeveloperTerminalTest` contains 10 passing cases.
+- `ZEALRN_ENABLE_TERMINAL=OFF` configured and built successfully.
+- Xvfb verified first-launch hidden behavior, both View actions, selected-tool/dock restoration, light/dark appearance, and the one-time safety acknowledgement.
+- The Docker image contains no external terminal executable, so its fallback correctly displayed the container limitation. The host has `gnome-terminal`.
+- Embedded QTermWidget runtime checks were not possible: Ubuntu 24.04 packages only Qt 5 QTermWidget, while upstream QTermWidget 2.1 requires Qt 6.6.
+- Windows uses the existing CI matrix for guarded compile coverage after publication; no Windows runtime validation was claimed.
