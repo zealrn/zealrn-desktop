@@ -7,6 +7,8 @@
 #include <QWidget>
 #include <QElapsedTimer>
 
+#include <memory>
+
 class QCheckBox;
 class QLabel;
 class QListWidget;
@@ -16,6 +18,7 @@ class QShowEvent;
 class QTabBar;
 class QTabWidget;
 class QTimer;
+class QTemporaryDir;
 class QVBoxLayout;
 
 namespace Zeal::Core {
@@ -33,7 +36,7 @@ class WebPlaygroundPanel final : public QWidget
     Q_DISABLE_COPY_MOVE(WebPlaygroundPanel)
 public:
     explicit WebPlaygroundPanel(Core::Settings *settings, QWidget *parent = nullptr);
-    ~WebPlaygroundPanel() override = default;
+    ~WebPlaygroundPanel() override;
 
 signals:
     void closeRequested();
@@ -53,6 +56,9 @@ private:
                        int lineNumber = 0,
                        const QString &sourceId = {});
     void clearConsole();
+    void openInBrowser();
+    void exportProject();
+    void updateConsoleColors();
 
     Core::Settings *m_settings = nullptr;
     QTabBar *m_editorTabs = nullptr;
@@ -74,6 +80,7 @@ private:
     quint64 m_runGeneration = 0;
     QElapsedTimer m_consoleRateTimer;
     int m_consoleMessagesThisSecond = 0;
+    std::unique_ptr<QTemporaryDir> m_externalProject;
 };
 
 } // namespace Zeal::WidgetUi

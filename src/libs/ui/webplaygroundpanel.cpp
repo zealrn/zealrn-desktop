@@ -10,12 +10,17 @@
 #include <core/settings.h>
 
 #include <QCheckBox>
+#include <QDesktopServices>
+#include <QDir>
+#include <QFileDialog>
 #include <QFileInfo>
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QListWidget>
+#include <QLineEdit>
 #include <QMessageBox>
+#include <QInputDialog>
 #include <QPushButton>
 #include <QPointer>
 #include <QHideEvent>
@@ -25,6 +30,7 @@
 #include <QVBoxLayout>
 #include <QTime>
 #include <QTimer>
+#include <QTemporaryDir>
 #include <QUrl>
 
 namespace Zeal::WidgetUi {
@@ -108,8 +114,19 @@ WebPlaygroundPanel::WebPlaygroundPanel(Core::Settings *settings, QWidget *parent
     connect(m_stopButton, &QPushButton::clicked, this, &WebPlaygroundPanel::stopPreview);
     connect(m_resetButton, &QPushButton::clicked, this, &WebPlaygroundPanel::resetDocuments);
     connect(m_clearConsoleButton, &QPushButton::clicked, this, &WebPlaygroundPanel::clearConsole);
+    connect(m_openBrowserButton, &QPushButton::clicked, this, &WebPlaygroundPanel::openInBrowser);
+    connect(m_exportButton, &QPushButton::clicked, this, &WebPlaygroundPanel::exportProject);
     connect(m_autoRunTimer, &QTimer::timeout, this, &WebPlaygroundPanel::runPreview);
+    connect(m_autoRun, &QCheckBox::toggled, this, [this](bool enabled) {
+        if (enabled && isVisible() && m_editor != nullptr) {
+            m_autoRunTimer->start();
+        } else {
+            m_autoRunTimer->stop();
+        }
+    });
 }
+
+WebPlaygroundPanel::~WebPlaygroundPanel() = default;
 
 void WebPlaygroundPanel::showEvent(QShowEvent *event)
 {
@@ -150,6 +167,8 @@ void WebPlaygroundPanel::ensureInitialized()
         m_resetButton->setEnabled(true);
         m_stopButton->setEnabled(true);
         m_clearConsoleButton->setEnabled(true);
+        m_openBrowserButton->setEnabled(true);
+        m_exportButton->setEnabled(true);
         m_editor->setActiveEditor(m_editorTabs->currentIndex());
     });
     connect(m_editor, &WebPlaygroundEditor::contentChanged, this, [this]() {
@@ -171,6 +190,7 @@ void WebPlaygroundPanel::applyAppearance()
     if (m_editor != nullptr) {
         m_editor->setDark(m_settings->isDarkModeEnabled());
     }
+    updateConsoleColors();
 }
 
 void WebPlaygroundPanel::runPreview()
@@ -265,16 +285,118 @@ void WebPlaygroundPanel::appendConsole(const QString &severity,
                                               location),
                                      m_console);
     item->setData(Qt::UserRole, displayedSeverity);
-    if (displayedSeverity == QStringLiteral("Error")) {
-        item->setForeground(QColor(210, 55, 55));
-    } else if (displayedSeverity == QStringLiteral("Warning")) {
-        item->setForeground(QColor(190, 125, 20));
-    }
+    updateConsoleColors();
 }
 
 void WebPlaygroundPanel::clearConsole()
 {
     m_console->clear();
+}
+
+void WebPlaygroundPanel::openInBrowser()
+{
+    const quint64 generation = ++m_runGeneration;
+    const QPointer<WebPlaygroundPanel> guard(this);
+    m_editor->requestDocuments([guard, generation](const WebPlayground::Documents &documents) {
+        if (guard == nullptr || generation != guard->m_runGeneration) {
+            return;
+        }
+
+        auto project = std::make_unique<QTemporaryDir>(QStringLiteral("%1/zealrn-playground-XXXXXX")
+                                                            .arg(QDir::tempPath()));
+        QString error;
+        if (!project->isValid()
+            || WebPlayground::writeProject(project->path(), documents, true, &error)
+                   != WebPlayground::ExportResult::Success) {
+            QMessageBox::warning(guard,
+                                 guard->tr("Open in Browser"),
+                                 error.isEmpty() ? guard->tr("Could not create a temporary project.") : error);
+            return;
+        }
+
+        const QUrl indexUrl = QUrl::fromLocalFile(QDir(project->path()).filePath(QStringLiteral("index.html")));
+        QMessageBox::information(
+            guard,
+            guard->tr("Open in Browser"),
+            guard->tr("The external browser runs this project outside the isolated preview restrictions."));
+        if (!QDesktopServices::openUrl(indexUrl)) {
+            QMessageBox::warning(guard, guard->tr("Open in Browser"), guard->tr("Could not open the external browser."));
+            return;
+        }
+        guard->m_externalProject = std::move(project);
+    });
+}
+
+void WebPlaygroundPanel::exportProject()
+{
+    const QString parentDirectory = QFileDialog::getExistingDirectory(this,
+                                                                       tr("Export Project"),
+                                                                       QDir::homePath());
+    if (parentDirectory.isEmpty()) {
+        return;
+    }
+
+    bool accepted = false;
+    const QString name = QInputDialog::getText(this,
+                                                tr("Project Name"),
+                                                tr("Directory name:"),
+                                                QLineEdit::Normal,
+                                                QStringLiteral("zealrn-project"),
+                                                &accepted)
+                             .trimmed();
+    if (!accepted) {
+        return;
+    }
+    if (name.isEmpty() || name == QStringLiteral(".") || name == QStringLiteral("..")
+        || QFileInfo(name).fileName() != name || name.contains('/') || name.contains('\\')) {
+        QMessageBox::warning(this, tr("Export Project"), tr("Enter a single valid directory name."));
+        return;
+    }
+
+    const QString projectDirectory = QDir(parentDirectory).filePath(name);
+    const quint64 generation = ++m_runGeneration;
+    const QPointer<WebPlaygroundPanel> guard(this);
+    m_editor->requestDocuments([guard, generation, projectDirectory](const WebPlayground::Documents &documents) {
+        if (guard == nullptr || generation != guard->m_runGeneration) {
+            return;
+        }
+        QString error;
+        auto result = WebPlayground::writeProject(projectDirectory, documents, false, &error);
+        if (result == WebPlayground::ExportResult::Exists) {
+            if (QMessageBox::question(guard,
+                                      guard->tr("Export Project"),
+                                      guard->tr("Replace existing index.html, style.css, and script.js files?"))
+                != QMessageBox::Yes) {
+                return;
+            }
+            result = WebPlayground::writeProject(projectDirectory, documents, true, &error);
+        }
+        if (result != WebPlayground::ExportResult::Success) {
+            QMessageBox::warning(guard,
+                                 guard->tr("Export Project"),
+                                 error.isEmpty() ? guard->tr("Could not export the project.") : error);
+            return;
+        }
+        QMessageBox::information(guard,
+                                 guard->tr("Export Project"),
+                                 guard->tr("Project exported to %1").arg(QDir::toNativeSeparators(projectDirectory)));
+    });
+}
+
+void WebPlaygroundPanel::updateConsoleColors()
+{
+    const QPalette currentPalette = palette();
+    for (int i = 0; i < m_console->count(); ++i) {
+        auto *item = m_console->item(i);
+        const QString severity = item->data(Qt::UserRole).toString();
+        QPalette::ColorRole role = QPalette::Text;
+        if (severity == QStringLiteral("Error")) {
+            role = QPalette::BrightText;
+        } else if (severity == QStringLiteral("Warning")) {
+            role = QPalette::LinkVisited;
+        }
+        item->setForeground(currentPalette.color(role));
+    }
 }
 
 } // namespace Zeal::WidgetUi

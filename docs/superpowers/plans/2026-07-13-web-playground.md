@@ -57,10 +57,10 @@
 
 **Modify:** `src/libs/ui/webplaygroundpanel.h/.cpp`, editor wrapper, project helper/tests.
 
-- [ ] Reconfigure editor theme on Settings updates without replacing editor state.
-- [ ] Implement retained temporary standalone output and QDesktopServices launch warning.
-- [ ] Implement destination selection, three-file UTF-8 export, overwrite confirmation/refusal, and clear errors.
-- [ ] Build/test, review, and commit.
+- [x] Reconfigure editor theme on Settings updates without replacing editor state.
+- [x] Implement retained temporary standalone output and QDesktopServices launch warning.
+- [x] Implement destination selection, three-file UTF-8 export, overwrite confirmation/refusal, and clear errors.
+- [x] Build/test, review, and commit.
 
 ## Task 6: Final Validation
 
