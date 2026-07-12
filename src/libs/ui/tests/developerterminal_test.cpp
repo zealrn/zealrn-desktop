@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "../terminalsupport.h"
+#include "../terminalbackend.h"
 
 #include <QTest>
 #include <QTemporaryDir>
@@ -19,6 +20,7 @@ private slots:
     void bottomToolFromValue_rejectsInvalidValue();
     void linuxExternalTerminal_buildsSeparateArguments();
     void windowsExternalTerminal_prefersWindowsTerminal();
+    void backendFactory_matchesBuildConfiguration();
 };
 
 void DeveloperTerminalTest::validatedShell_keepsAvailableChoice()
@@ -84,5 +86,18 @@ void DeveloperTerminalTest::windowsExternalTerminal_prefersWindowsTerminal()
                           QStringLiteral("C:/Apps/pwsh.exe")}));
 }
 
-QTEST_GUILESS_MAIN(DeveloperTerminalTest)
+void DeveloperTerminalTest::backendFactory_matchesBuildConfiguration()
+{
+    const auto backend = Zeal::WidgetUi::createTerminalBackend();
+    QVERIFY(backend);
+#ifdef ZEALRN_HAVE_QTERMWIDGET
+    QVERIFY(backend->isAvailable());
+    QVERIFY(backend->widget());
+#else
+    QVERIFY(!backend->isAvailable());
+    QVERIFY(!backend->widget());
+#endif
+}
+
+QTEST_MAIN(DeveloperTerminalTest)
 #include "developerterminal_test.moc"

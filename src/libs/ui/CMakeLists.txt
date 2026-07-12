@@ -29,6 +29,25 @@ add_library(Ui STATIC
     ${Ui_FORMS} # For Qt Creator.
 )
 
+set(TerminalBackend_SOURCE unavailableterminalbackend.cpp)
+if(ZEALRN_ENABLE_TERMINAL)
+    target_compile_definitions(Ui PRIVATE ZEALRN_ENABLE_TERMINAL)
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        find_package(qtermwidget6 CONFIG QUIET)
+        if(TARGET qtermwidget6)
+            set(TerminalBackend_SOURCE linuxterminalbackend.cpp)
+            target_link_libraries(Ui PRIVATE qtermwidget6)
+            target_compile_definitions(Ui PUBLIC ZEALRN_HAVE_QTERMWIDGET)
+            message(STATUS "Developer Terminal: QTermWidget backend enabled")
+        else()
+            message(STATUS "Developer Terminal: QTermWidget unavailable; external terminal fallback enabled")
+        endif()
+    endif()
+else()
+    message(STATUS "Developer Terminal: disabled; external terminal fallback enabled")
+endif()
+target_sources(Ui PRIVATE ${TerminalBackend_SOURCE})
+
 target_link_libraries(Ui PRIVATE Browser Sidebar QxtGlobalShortcut Widgets Registry Util)
 
 zeal_attach_qt_pch(Ui <QDialog> <QWidget>)

@@ -59,6 +59,8 @@ Detailed, up-to-date build instructions for each platform are available in the
 * [SQLite](https://sqlite.org/).
 * Linux/BSD platforms: `extra-cmake-modules`.
 * X11 platforms only: `libxkbcommon`, `xcb-util-keysyms`.
+* Optional Linux embedded Developer Terminal: Qt 6 [QTermWidget](https://github.com/lxqt/qtermwidget) 2.x.
+  Without it, Zeal builds with Open External Terminal as the fallback.
 
 ### Build instructions
 
@@ -66,6 +68,9 @@ Detailed, up-to-date build instructions for each platform are available in the
 cmake --preset release
 cmake --build --preset release
 ```
+
+Set `-DZEALRN_ENABLE_TERMINAL=OFF` to disable embedded terminal discovery explicitly. The default is `ON`; CMake
+enables the QTermWidget backend only when the Qt 6 `qtermwidget6` package is available.
 
 The resulting binary is `build/release/zeal` (`zeal.exe` on Windows).
 

@@ -102,6 +102,8 @@ if(ZEAL_FEATURE_UPDATE_CHECK)
     add_compile_definitions(ZEAL_FEATURE_UPDATE_CHECK)
 endif()
 
+option(ZEALRN_ENABLE_TERMINAL "Enable Developer Terminal integration" ON)
+
 option(BUILD_TESTING "Build the testing suite" OFF)
 if(BUILD_TESTING)
     enable_testing()
