@@ -5,6 +5,7 @@
 #define ZEAL_WIDGETUI_ALLNOTESDIALOG_H
 
 #include "learningnotepage.h"
+#include "learningnotesexporter.h"
 
 #include <QDialog>
 
@@ -15,6 +16,7 @@ class QListWidget;
 class QPlainTextEdit;
 class QPushButton;
 class QTimer;
+class QToolButton;
 
 namespace Zeal::WidgetUi {
 
@@ -29,7 +31,7 @@ public:
 
 signals:
     void openDocumentationRequested(const LearningNotePage &page);
-    void exportRequested(const LearningNote &note);
+    void exportRequested(const LearningNote &note, LearningNotesExport::Format format);
 
 private:
     void refresh();
@@ -47,7 +49,7 @@ private:
     QPushButton *m_openButton = nullptr;
     QPushButton *m_saveButton = nullptr;
     QPushButton *m_deleteButton = nullptr;
-    QPushButton *m_exportButton = nullptr;
+    QToolButton *m_exportButton = nullptr;
     QTimer *m_searchTimer = nullptr;
     QList<LearningNote> m_notes;
 };

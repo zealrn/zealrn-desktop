@@ -263,6 +263,17 @@ bool LearningNotesStore::remove(qint64 id)
     return true;
 }
 
+bool LearningNotesStore::checkpoint()
+{
+    QSqlQuery query(m_database);
+    if (!query.exec(QStringLiteral("PRAGMA wal_checkpoint(FULL)"))) {
+        setLastError(query.lastError().text());
+        return false;
+    }
+    m_lastError.clear();
+    return true;
+}
+
 void LearningNotesStore::setLastError(const QString &error)
 {
     m_lastError = error;

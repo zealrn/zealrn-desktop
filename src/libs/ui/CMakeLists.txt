@@ -15,6 +15,7 @@ add_library(Ui STATIC
     docsetlistitemdelegate.cpp
     docsetsdialog.cpp
     learningnotespanel.cpp
+    learningnotesexporter.cpp
     learningnotesstore.cpp
     mainwindow.cpp
     searchitemdelegate.cpp
@@ -57,8 +58,9 @@ target_link_libraries(Ui PRIVATE Browser Sidebar QxtGlobalShortcut Widgets Regis
 
 zeal_attach_qt_pch(Ui <QDialog> <QWidget>)
 
-find_package(Qt6 COMPONENTS Sql WebChannel WebEngineWidgets REQUIRED)
-target_link_libraries(Ui PRIVATE Qt6::Sql Qt6::WebChannel Qt6::WebEngineWidgets)
+find_package(LibArchive REQUIRED)
+find_package(Qt6 COMPONENTS PrintSupport Sql WebChannel WebEngineWidgets REQUIRED)
+target_link_libraries(Ui PRIVATE LibArchive::LibArchive Qt6::PrintSupport Qt6::Sql Qt6::WebChannel Qt6::WebEngineWidgets)
 
 if(BUILD_TESTING)
     find_package(Qt6 COMPONENTS Test REQUIRED)

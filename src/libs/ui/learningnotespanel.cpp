@@ -7,16 +7,41 @@
 #include "learningnotesstore.h"
 
 #include <QCoreApplication>
+#include <QDateTime>
+#include <QDir>
 #include <QFont>
+#include <QFileDialog>
+#include <QFileInfo>
 #include <QGridLayout>
 #include <QLabel>
 #include <QMenu>
+#include <QMessageBox>
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QShortcut>
+#include <QStandardPaths>
 #include <QTimer>
 #include <QToolButton>
 #include <QVBoxLayout>
+
+namespace {
+
+QString exportDirectory()
+{
+    QString directory = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+    return directory.isEmpty() ? QDir::homePath() : directory;
+}
+
+bool confirmOverwrite(QWidget *parent, const QString &path)
+{
+    return !QFileInfo::exists(path)
+        || QMessageBox::question(parent,
+                                 QCoreApplication::translate("LearningNotesPanel", "Replace File"),
+                                 QCoreApplication::translate("LearningNotesPanel", "Replace the existing file?"))
+               == QMessageBox::Yes;
+}
+
+} // namespace
 
 namespace Zeal::WidgetUi {
 
@@ -85,12 +110,28 @@ void LearningNotesPanel::setupUi()
     auto *allNotesButton = new QPushButton(QCoreApplication::translate("LearningNotesPanel", "All Notes"), this);
     buttonLayout->addWidget(allNotesButton, 1, 0);
 
-    auto *exportButton = new QToolButton(this);
-    exportButton->setText(QCoreApplication::translate("LearningNotesPanel", "Export"));
-    exportButton->setPopupMode(QToolButton::InstantPopup);
-    exportButton->setMenu(new QMenu(exportButton));
-    exportButton->setEnabled(false);
-    buttonLayout->addWidget(exportButton, 1, 1);
+    m_exportButton = new QToolButton(this);
+    m_exportButton->setText(QCoreApplication::translate("LearningNotesPanel", "Export"));
+    m_exportButton->setPopupMode(QToolButton::InstantPopup);
+    auto *exportMenu = new QMenu(m_exportButton);
+    exportMenu->addAction(QCoreApplication::translate("LearningNotesPanel", "Export Markdown"), this, [this]() {
+        exportNote(m_note, LearningNotesExport::Format::Markdown);
+    });
+    exportMenu->addAction(QCoreApplication::translate("LearningNotesPanel", "Export PDF"), this, [this]() {
+        exportNote(m_note, LearningNotesExport::Format::Pdf);
+    });
+    exportMenu->addAction(QCoreApplication::translate("LearningNotesPanel", "Export JSON"), this, [this]() {
+        exportNote(m_note, LearningNotesExport::Format::Json);
+    });
+    exportMenu->addSeparator();
+    exportMenu->addAction(QCoreApplication::translate("LearningNotesPanel", "Export All Notes"),
+                          this,
+                          &LearningNotesPanel::exportAllNotes);
+    exportMenu->addAction(QCoreApplication::translate("LearningNotesPanel", "Backup Database"),
+                          this,
+                          &LearningNotesPanel::backupDatabase);
+    m_exportButton->setMenu(exportMenu);
+    buttonLayout->addWidget(m_exportButton, 1, 1);
     layout->addLayout(buttonLayout);
 
     m_autoSaveTimer = new QTimer(this);
@@ -141,6 +182,7 @@ bool LearningNotesPanel::setPage(const LearningNotePage &page)
     m_editor->setEnabled(valid);
     m_saveButton->setEnabled(valid);
     m_addSelectionButton->setEnabled(valid);
+    m_exportButton->setEnabled(true);
     m_docsetLabel->setText(valid ? page.docsetName : QString());
     m_pageLabel->setText(valid ? page.pageTitle : QCoreApplication::translate(
                                                       "LearningNotesPanel", "No documentation page selected"));
@@ -217,11 +259,96 @@ void LearningNotesPanel::showAllNotes()
     }
     AllNotesDialog dialog(m_store.get(), this);
     connect(&dialog, &AllNotesDialog::openDocumentationRequested, this, &LearningNotesPanel::openDocumentationRequested);
+    connect(&dialog, &AllNotesDialog::exportRequested, this, &LearningNotesPanel::exportNote);
     dialog.exec();
 
     const LearningNotePage page = m_note.page;
     m_note = {};
     setPage(page);
+}
+
+void LearningNotesPanel::exportNote(const LearningNote &note, LearningNotesExport::Format format)
+{
+    if (!note.page.isValid()) {
+        return;
+    }
+    const bool isCurrent = note.page.docsetId == m_note.page.docsetId && note.page.pageKey == m_note.page.pageKey;
+    if (isCurrent && !flush()) {
+        return;
+    }
+    const LearningNote value = isCurrent ? m_note : note;
+    const QString base = LearningNotesExport::safeFileName(value.page.docsetName, value.page.pageTitle);
+    const QString extension = format == LearningNotesExport::Format::Markdown
+                                ? QStringLiteral("md")
+                                : format == LearningNotesExport::Format::Pdf ? QStringLiteral("pdf")
+                                                                            : QStringLiteral("json");
+    const QString path = QFileDialog::getSaveFileName(this,
+                                                      tr("Export Learning Note"),
+                                                      QDir(exportDirectory()).filePath(base + QLatin1Char('.')
+                                                                                       + extension));
+    if (path.isEmpty() || !confirmOverwrite(this, path)) {
+        return;
+    }
+
+    QString error;
+    LearningNotesExport::Result result = LearningNotesExport::Result::Error;
+    if (format == LearningNotesExport::Format::Markdown) {
+        result = LearningNotesExport::writeMarkdown(path, value, true, &error);
+    } else if (format == LearningNotesExport::Format::Pdf) {
+        result = LearningNotesExport::writePdf(path, value, true, &error);
+    } else {
+        result = LearningNotesExport::writeJson(path, value, true, &error);
+    }
+    if (result == LearningNotesExport::Result::Success) {
+        QMessageBox::information(this, tr("Export Complete"), tr("The note was exported successfully."));
+    } else {
+        QMessageBox::warning(this, tr("Export Failed"), error);
+    }
+}
+
+void LearningNotesPanel::exportAllNotes()
+{
+    if (!flush()) {
+        return;
+    }
+    const QList<LearningNote> notes = m_store->search();
+    if (notes.isEmpty()) {
+        QMessageBox::information(this, tr("Export All Notes"), tr("There are no saved notes to export."));
+        return;
+    }
+    const QString suggested = QDir(exportDirectory())
+                                  .filePath(QStringLiteral("notes-export-%1.zip").arg(
+                                      QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd-HHmmss"))));
+    const QString path = QFileDialog::getSaveFileName(this, tr("Export All Notes"), suggested);
+    if (path.isEmpty() || !confirmOverwrite(this, path)) {
+        return;
+    }
+    QString error;
+    if (LearningNotesExport::writeAllZip(path, notes, true, &error) == LearningNotesExport::Result::Success) {
+        QMessageBox::information(this, tr("Export Complete"), tr("All notes were exported successfully."));
+    } else {
+        QMessageBox::warning(this, tr("Export Failed"), error);
+    }
+}
+
+void LearningNotesPanel::backupDatabase()
+{
+    if (!flush() || !m_store->checkpoint()) {
+        QMessageBox::warning(this, tr("Backup Failed"), m_store->lastError());
+        return;
+    }
+    const QString suggested = QDir(exportDirectory()).filePath(QStringLiteral("learning-notes-backup.sqlite"));
+    const QString path = QFileDialog::getSaveFileName(this, tr("Backup Notes Database"), suggested);
+    if (path.isEmpty() || !confirmOverwrite(this, path)) {
+        return;
+    }
+    QString error;
+    if (LearningNotesExport::copyDatabase(m_store->databasePath(), path, true, &error)
+        == LearningNotesExport::Result::Success) {
+        QMessageBox::information(this, tr("Backup Complete"), tr("The notes database was backed up successfully."));
+    } else {
+        QMessageBox::warning(this, tr("Backup Failed"), error);
+    }
 }
 
 void LearningNotesPanel::setStatus(const QString &status)

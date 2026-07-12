@@ -5,6 +5,7 @@
 #define ZEAL_WIDGETUI_LEARNINGNOTESPANEL_H
 
 #include "learningnotepage.h"
+#include "learningnotesexporter.h"
 
 #include <QWidget>
 
@@ -14,6 +15,7 @@ class QLabel;
 class QPlainTextEdit;
 class QPushButton;
 class QTimer;
+class QToolButton;
 
 namespace Zeal::WidgetUi {
 
@@ -40,6 +42,9 @@ private:
     void setupUi();
     bool save(bool explicitSave);
     void showAllNotes();
+    void exportNote(const LearningNote &note, LearningNotesExport::Format format);
+    void exportAllNotes();
+    void backupDatabase();
     void setStatus(const QString &status);
 
     std::unique_ptr<LearningNotesStore> m_store;
@@ -51,6 +56,7 @@ private:
     QPlainTextEdit *m_editor = nullptr;
     QPushButton *m_saveButton = nullptr;
     QPushButton *m_addSelectionButton = nullptr;
+    QToolButton *m_exportButton = nullptr;
     QTimer *m_autoSaveTimer = nullptr;
     QString m_lastSelection;
     bool m_dirty = false;

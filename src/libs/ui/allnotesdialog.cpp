@@ -12,10 +12,12 @@
 #include <QListWidget>
 #include <QLocale>
 #include <QMessageBox>
+#include <QMenu>
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QSplitter>
 #include <QTimer>
+#include <QToolButton>
 #include <QVBoxLayout>
 
 #include <algorithm>
@@ -56,7 +58,26 @@ AllNotesDialog::AllNotesDialog(LearningNotesStore *store, QWidget *parent)
     m_openButton = new QPushButton(tr("Open Documentation"), this);
     m_saveButton = new QPushButton(tr("Save"), this);
     m_deleteButton = new QPushButton(tr("Delete"), this);
-    m_exportButton = new QPushButton(tr("Export"), this);
+    m_exportButton = new QToolButton(this);
+    m_exportButton->setText(tr("Export"));
+    m_exportButton->setPopupMode(QToolButton::InstantPopup);
+    auto *exportMenu = new QMenu(m_exportButton);
+    exportMenu->addAction(tr("Markdown"), this, [this]() {
+        if (const LearningNote *note = currentNote()) {
+            emit exportRequested(*note, LearningNotesExport::Format::Markdown);
+        }
+    });
+    exportMenu->addAction(tr("PDF"), this, [this]() {
+        if (const LearningNote *note = currentNote()) {
+            emit exportRequested(*note, LearningNotesExport::Format::Pdf);
+        }
+    });
+    exportMenu->addAction(tr("JSON"), this, [this]() {
+        if (const LearningNote *note = currentNote()) {
+            emit exportRequested(*note, LearningNotesExport::Format::Json);
+        }
+    });
+    m_exportButton->setMenu(exportMenu);
     buttons->addWidget(m_openButton);
     buttons->addStretch();
     buttons->addWidget(m_saveButton);
@@ -79,12 +100,6 @@ AllNotesDialog::AllNotesDialog(LearningNotesStore *store, QWidget *parent)
             accept();
         }
     });
-    connect(m_exportButton, &QPushButton::clicked, this, [this]() {
-        if (const LearningNote *note = currentNote()) {
-            emit exportRequested(*note);
-        }
-    });
-
     const QList<LearningNote> allNotes = m_store->search();
     QStringList docsets;
     for (const LearningNote &note : allNotes) {
