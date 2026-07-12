@@ -64,8 +64,8 @@
 
 ## Task 6: Final Validation
 
-- [ ] Configure/build Release and Testing in the established Ubuntu 24.04 image; run all tests.
-- [ ] Remove `node_modules` and validate builds/runtime again without Node.js.
-- [ ] Run Xvfb checks for every requested editor, preview, console, theme, open/export, and isolation behavior.
-- [ ] Confirm documentation and Learning Notes remain functional.
-- [ ] Audit status/diff/staging; keep `.codegraph/` and generated runtime files unstaged; do not push.
+- [x] Configure/build Release and Testing in the established Ubuntu 24.04 image; run all tests.
+- [x] Remove `node_modules` and validate builds/runtime again without Node.js.
+- [x] Run Xvfb checks for the requested editor, preview, console, theme, open/export, and isolation behavior.
+- [x] Confirm documentation and Learning Notes remain functional.
+- [x] Audit status/diff/staging; keep `.codegraph/` and generated runtime files unstaged; do not push.
