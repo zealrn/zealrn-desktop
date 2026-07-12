@@ -20,6 +20,7 @@ private slots:
     void bottomToolFromValue_rejectsInvalidValue();
     void linuxExternalTerminal_buildsSeparateArguments();
     void windowsExternalTerminal_prefersWindowsTerminal();
+    void windowsExternalTerminal_withoutWtUsesSelectedShell();
     void backendFactory_matchesBuildConfiguration();
 };
 
@@ -84,6 +85,18 @@ void DeveloperTerminalTest::windowsExternalTerminal_prefersWindowsTerminal()
              QStringList({QStringLiteral("-d"),
                           QStringLiteral("C:/Users/Test User"),
                           QStringLiteral("C:/Apps/pwsh.exe")}));
+}
+
+void DeveloperTerminalTest::windowsExternalTerminal_withoutWtUsesSelectedShell()
+{
+    const ExternalTerminalLaunch launch = externalTerminalLaunch(Platform::Windows,
+                                                                 {QStringLiteral("C:/Apps/pwsh.exe"),
+                                                                  QStringLiteral("C:/Windows/System32/cmd.exe")},
+                                                                 QStringLiteral("C:/Windows/System32/cmd.exe"),
+                                                                 QStringLiteral("C:/Users/Test"));
+
+    QCOMPARE(launch.program, QStringLiteral("C:/Windows/System32/cmd.exe"));
+    QVERIFY(launch.arguments.isEmpty());
 }
 
 void DeveloperTerminalTest::backendFactory_matchesBuildConfiguration()

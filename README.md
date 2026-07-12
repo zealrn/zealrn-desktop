@@ -71,6 +71,7 @@ cmake --build --preset release
 
 Set `-DZEALRN_ENABLE_TERMINAL=OFF` to disable embedded terminal discovery explicitly. The default is `ON`; CMake
 enables the QTermWidget backend only when the Qt 6 `qtermwidget6` package is available.
+Windows currently uses Open External Terminal while embedded ConPTY rendering remains pending.
 
 The resulting binary is `build/release/zeal` (`zeal.exe` on Windows).
 

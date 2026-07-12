@@ -97,6 +97,10 @@ ExternalTerminalLaunch externalTerminalLaunch(Platform platform,
             return {terminal, {QStringLiteral("-d"), workingDirectory, shell}};
         }
 
+        if (availablePrograms.contains(shell)) {
+            return {shell, {}};
+        }
+
         for (const QString &name : {QStringLiteral("pwsh.exe"), QStringLiteral("powershell.exe"), QStringLiteral("cmd.exe")}) {
             if (const QString terminal = executableNamed(availablePrograms, name); !terminal.isEmpty()) {
                 return {terminal, {}};
