@@ -10,6 +10,8 @@
 #include <QFile>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QProcess>
+#include <QStandardPaths>
 #include <QTemporaryDir>
 #include <QTest>
 
@@ -81,6 +83,18 @@ void LearningNotesExporterTest::pdf_containsSearchableText()
     QFile file(path);
     QVERIFY(file.open(QIODevice::ReadOnly));
     QVERIFY(file.read(4) == QByteArrayLiteral("%PDF"));
+
+    const QString pdftotext = QStandardPaths::findExecutable(QStringLiteral("pdftotext"));
+    if (!pdftotext.isEmpty()) {
+        const QString textPath = dir.filePath(QStringLiteral("note.txt"));
+        QProcess process;
+        process.start(pdftotext, {path, textPath});
+        QVERIFY(process.waitForFinished());
+        QCOMPARE(process.exitCode(), 0);
+        QFile textFile(textPath);
+        QVERIFY(textFile.open(QIODevice::ReadOnly));
+        QVERIFY(textFile.readAll().contains(QByteArrayLiteral("Atomic UTF-8")));
+    }
 }
 
 void LearningNotesExporterTest::zip_containsIndexAndUniqueMarkdownFiles()
