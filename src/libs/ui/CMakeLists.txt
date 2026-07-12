@@ -19,6 +19,7 @@ add_library(Ui STATIC
     settingsdialog.cpp
     sidebarviewprovider.cpp
     webplaygroundpanel.cpp
+    webplaygroundproject.cpp
     windowmanager.cpp
     ${Ui_FORMS} # For Qt Creator.
 )
@@ -29,3 +30,8 @@ zeal_attach_qt_pch(Ui <QDialog> <QWidget>)
 
 find_package(Qt6 COMPONENTS WebEngineWidgets REQUIRED)
 target_link_libraries(Ui PRIVATE Qt6::WebEngineWidgets)
+
+if(BUILD_TESTING)
+    find_package(Qt6 COMPONENTS Test REQUIRED)
+    add_subdirectory(tests)
+endif()

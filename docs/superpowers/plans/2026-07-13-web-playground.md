@@ -27,9 +27,9 @@
 
 **Modify:** `src/libs/ui/CMakeLists.txt`.
 
-- [ ] Add failing tests for starter/reset values, base64 composition, Unicode, closing tags, blocked schemes, console trimming, project output, and overwrite refusal.
-- [ ] Implement the smallest pure helpers and make tests green.
-- [ ] Run all tests, review, and commit.
+- [x] Add focused tests for starter/reset values, base64 composition, Unicode, closing tags, blocked schemes, console trimming, project output, and overwrite refusal.
+- [x] Implement the smallest pure helpers and make tests green.
+- [x] Run all tests, review, and commit.
 
 ## Task 3: Lazy Editor Integration
 
