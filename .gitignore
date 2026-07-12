@@ -49,3 +49,6 @@ CMakeUserPresets.json
 .zealrn-preview/
 .zealrn-path-probe/
 .zealrn-preview-*/
+
+# Developer-only playground asset dependencies
+tools/playground/node_modules/

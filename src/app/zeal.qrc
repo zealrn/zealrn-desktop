@@ -18,6 +18,11 @@
         <file alias="fonts/SourceSerif4.woff2">resources/browser/fonts/SourceSerif4.woff2</file>
         <file alias="fonts/SourceSerif4-Italic.woff2">resources/browser/fonts/SourceSerif4-Italic.woff2</file>
     </qresource>
+    <qresource prefix="/playground">
+        <file alias="editor.html">resources/playground/editor.html</file>
+        <file alias="editor.bundle.js">resources/playground/editor.bundle.js</file>
+        <file alias="preview.html">resources/playground/preview.html</file>
+    </qresource>
     <qresource prefix="/icons/tabler">
         <file alias="app-window.svg">../../assets/tabler/app-window.svg</file>
         <file alias="arrow-left.svg">../../assets/tabler/arrow-left.svg</file>

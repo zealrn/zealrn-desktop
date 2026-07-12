@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' blob:; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; font-src data:; media-src data: blob:;">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+</head>
+<body>
+<script>
+(() => {
+  const decode = value => new TextDecoder().decode(Uint8Array.from(atob(value), c => c.charCodeAt(0)));
+  window.zealrnPreview = {
+    render(encodedHtml, encodedCss, encodedJavaScript) {
+      const parsed = new DOMParser().parseFromString(decode(encodedHtml), "text/html");
+      const policy = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+      document.head.replaceChildren(policy, ...parsed.head.childNodes);
+      document.body.replaceChildren(...parsed.body.childNodes);
+
+      const style = document.createElement("style");
+      style.textContent = decode(encodedCss);
+      document.head.appendChild(style);
+
+      const script = document.createElement("script");
+      script.textContent = decode(encodedJavaScript);
+      document.body.appendChild(script);
+    }
+  };
+})();
+</script>
+</body>
+</html>

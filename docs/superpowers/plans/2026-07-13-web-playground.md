@@ -16,10 +16,10 @@
 
 **Modify:** `src/app/zeal.qrc`, `.gitignore` if required.
 
-- [ ] Pin only required CodeMirror/esbuild packages and generate the lockfile.
-- [ ] Implement three independent editor states, language support, requested editing features, search, and theme compartment.
-- [ ] Add the narrow asynchronous editor API and readiness/change bridge.
-- [ ] Bundle, verify no network references, remove `node_modules`, register resources, build, review, and commit.
+- [x] Pin only required CodeMirror/esbuild packages and generate the lockfile.
+- [x] Implement three independent editor states, language support, requested editing features, search, and theme compartment.
+- [x] Add the narrow asynchronous editor API and readiness/change bridge.
+- [x] Bundle, verify no network references, remove `node_modules`, register resources, build, review, and commit.
 
 ## Task 2: Testable Playground Core
 
@@ -69,4 +69,3 @@
 - [ ] Run Xvfb checks for every requested editor, preview, console, theme, open/export, and isolation behavior.
 - [ ] Confirm documentation and Learning Notes remain functional.
 - [ ] Audit status/diff/staging; keep `.codegraph/` and generated runtime files unstaged; do not push.
-

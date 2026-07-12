@@ -1,0 +1,22 @@
+{
+  "name": "zealrn-playground-assets",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "bundle": "esbuild src/editor.js --bundle --minify --format=iife --target=chrome102 --outfile=../../src/app/resources/playground/editor.bundle.js"
+  },
+  "dependencies": {
+    "@codemirror/commands": "6.10.4",
+    "@codemirror/lang-css": "6.3.1",
+    "@codemirror/lang-html": "6.4.11",
+    "@codemirror/lang-javascript": "6.2.5",
+    "@codemirror/language": "6.12.4",
+    "@codemirror/search": "6.7.1",
+    "@codemirror/state": "6.7.1",
+    "@codemirror/theme-one-dark": "6.1.3",
+    "@codemirror/view": "6.43.6"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.1"
+  }
+}
