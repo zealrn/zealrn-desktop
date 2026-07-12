@@ -21,6 +21,8 @@ private slots:
     void invalidQsettingsValueFallsBackToSystem();
     void qsettingsRestoresAfterReopen_data();
     void qsettingsRestoresAfterReopen();
+    void terminalSettingsRestoreAfterReopen();
+    void invalidBottomToolFallsBackToWebPlayground();
 };
 
 void SettingsTest::initTestCase()
@@ -96,6 +98,44 @@ void SettingsTest::qsettingsRestoresAfterReopen()
     QSettings settings(path, QSettings::IniFormat);
     const Appearance restored = settings.value(QStringLiteral("content/appearance")).value<Appearance>();
     QCOMPARE(restored, appearance);
+}
+
+void SettingsTest::terminalSettingsRestoreAfterReopen()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, dir.path());
+
+    {
+        Settings settings;
+        settings.terminalSafetyAcknowledged = true;
+        settings.terminalShell = QStringLiteral("/bin/zsh");
+        settings.terminalWorkingDirectory = QStringLiteral("/home/test/work");
+        settings.bottomDevelopmentTool = 1;
+        settings.save();
+    }
+
+    Settings restored;
+    QVERIFY(restored.terminalSafetyAcknowledged);
+    QCOMPARE(restored.terminalShell, QStringLiteral("/bin/zsh"));
+    QCOMPARE(restored.terminalWorkingDirectory, QStringLiteral("/home/test/work"));
+    QCOMPARE(restored.bottomDevelopmentTool, 1);
+}
+
+void SettingsTest::invalidBottomToolFallsBackToWebPlayground()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, dir.path());
+
+    {
+        QSettings settings;
+        settings.setValue(QStringLiteral("ui/bottom_development_tool"), 99);
+        settings.sync();
+    }
+
+    Settings settings;
+    QCOMPARE(settings.bottomDevelopmentTool, 0);
 }
 
 QTEST_MAIN(SettingsTest)

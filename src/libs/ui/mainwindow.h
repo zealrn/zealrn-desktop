@@ -16,6 +16,7 @@ class QMenuBar;
 class QSplitter;
 class QStackedWidget;
 class QTabBar;
+class QTabWidget;
 
 namespace Zeal {
 
@@ -70,6 +71,8 @@ private:
     void setupMainMenu();
     void setupShortcuts();
     void setupTabBar();
+    void showDevelopmentTool(int index);
+    void updateDevelopmentActions();
 
     void addTab(BrowserTab *tab, int index = -1, bool activate = true);
     BrowserTab *currentTab() const;
@@ -91,11 +94,14 @@ private:
     QSplitter *m_splitter = nullptr;
     QStackedWidget *m_webViewStack = nullptr;
     QDockWidget *m_webPlaygroundDock = nullptr;
+    QTabWidget *m_developmentTabs = nullptr;
 
     // TODO: Replace with proper action manager.
     QAction *m_showDocsetManagerAction = nullptr;
     QAction *m_showPreferencesAction = nullptr;
     QAction *m_showSidebarAction = nullptr;
+    QAction *m_showWebPlaygroundAction = nullptr;
+    QAction *m_showDeveloperTerminalAction = nullptr;
 #ifndef Q_OS_MACOS
     QAction *m_showMenuBarAction = nullptr;
 #endif

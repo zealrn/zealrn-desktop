@@ -10,6 +10,7 @@ set(Ui_FORMS
 add_library(Ui STATIC
     aboutdialog.cpp
     browsertab.cpp
+    developerterminalpanel.cpp
     docsetlistitemdelegate.cpp
     docsetsdialog.cpp
     learningnotespanel.cpp
@@ -18,6 +19,7 @@ add_library(Ui STATIC
     searchsidebar.cpp
     settingsdialog.cpp
     sidebarviewprovider.cpp
+    terminalbackend.cpp
     terminalsupport.cpp
     webplaygroundeditor.cpp
     webplaygroundpanel.cpp

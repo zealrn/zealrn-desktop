@@ -28,6 +28,10 @@ public:
     bool checkForUpdate;
     bool hideMenuBar;
     bool hideSidebar;
+    bool terminalSafetyAcknowledged;
+    QString terminalShell;
+    QString terminalWorkingDirectory;
+    int bottomDevelopmentTool;
     // TODO: bool restoreLastState;
 
     // System Tray

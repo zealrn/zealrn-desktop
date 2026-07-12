@@ -154,6 +154,13 @@ void Settings::load()
     settings->beginGroup(GroupUI);
     hideMenuBar = settings->value(QStringLiteral("hide_menu_bar"), false).toBool();
     hideSidebar = settings->value(QStringLiteral("hide_sidebar"), false).toBool();
+    terminalSafetyAcknowledged = settings->value(QStringLiteral("terminal_safety_acknowledged"), false).toBool();
+    terminalShell = settings->value(QStringLiteral("terminal_shell")).toString();
+    terminalWorkingDirectory = settings->value(QStringLiteral("terminal_working_directory")).toString();
+    bottomDevelopmentTool = settings->value(QStringLiteral("bottom_development_tool"), 0).toInt();
+    if (bottomDevelopmentTool != 0 && bottomDevelopmentTool != 1) {
+        bottomDevelopmentTool = 0;
+    }
     settings->endGroup();
 
     settings->beginGroup(GroupGlobalShortcuts);
@@ -316,6 +323,10 @@ void Settings::save()
     settings->beginGroup(GroupUI);
     settings->setValue(QStringLiteral("hide_menu_bar"), hideMenuBar);
     settings->setValue(QStringLiteral("hide_sidebar"), hideSidebar);
+    settings->setValue(QStringLiteral("terminal_safety_acknowledged"), terminalSafetyAcknowledged);
+    settings->setValue(QStringLiteral("terminal_shell"), terminalShell);
+    settings->setValue(QStringLiteral("terminal_working_directory"), terminalWorkingDirectory);
+    settings->setValue(QStringLiteral("bottom_development_tool"), bottomDevelopmentTool);
     settings->endGroup();
 
     settings->beginGroup(GroupGlobalShortcuts);

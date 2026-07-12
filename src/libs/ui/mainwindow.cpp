@@ -7,6 +7,7 @@
 #include "aboutdialog.h"
 #include "browsertab.h"
 #include "docsetsdialog.h"
+#include "developerterminalpanel.h"
 #include "learningnotespanel.h"
 #include "searchsidebar.h"
 #include "settingsdialog.h"
@@ -36,9 +37,11 @@
 #include <QMenuBar>
 #include <QMouseEvent>
 #include <QShortcut>
+#include <QSignalBlocker>
 #include <QSplitter>
 #include <QStackedWidget>
 #include <QTabBar>
+#include <QTabWidget>
 #include <QTimer>
 #include <QVBoxLayout>
 #include <QWindow>
@@ -64,14 +67,29 @@ MainWindow::MainWindow(Core::Application *app, QWidget *parent)
 #endif
     resize(900, 600); // Default size. May be overridden by restoreGeometry.
 
-    m_webPlaygroundDock = new QDockWidget(tr("Web Playground"), this);
+    m_webPlaygroundDock = new QDockWidget(tr("Development Tools"), this);
     m_webPlaygroundDock->setObjectName(QStringLiteral("webPlaygroundDock"));
     m_webPlaygroundDock->setAllowedAreas(Qt::BottomDockWidgetArea);
-    auto *webPlaygroundPanel = new WebPlaygroundPanel(m_settings, m_webPlaygroundDock);
-    m_webPlaygroundDock->setWidget(webPlaygroundPanel);
+    m_developmentTabs = new QTabWidget(m_webPlaygroundDock);
+    auto *webPlaygroundPanel = new WebPlaygroundPanel(m_settings, m_developmentTabs);
+    auto *developerTerminalPanel = new DeveloperTerminalPanel(m_settings, m_developmentTabs);
+    m_developmentTabs->addTab(webPlaygroundPanel, tr("Web Playground"));
+    m_developmentTabs->addTab(developerTerminalPanel, tr("Developer Terminal"));
+    m_developmentTabs->setCurrentIndex(m_settings->bottomDevelopmentTool);
+    m_webPlaygroundDock->setWidget(m_developmentTabs);
     addDockWidget(Qt::BottomDockWidgetArea, m_webPlaygroundDock);
     m_webPlaygroundDock->hide();
     connect(webPlaygroundPanel, &WebPlaygroundPanel::closeRequested, m_webPlaygroundDock, &QDockWidget::hide);
+    connect(developerTerminalPanel,
+            &DeveloperTerminalPanel::closeRequested,
+            m_webPlaygroundDock,
+            &QDockWidget::hide);
+    connect(m_developmentTabs, &QTabWidget::currentChanged, this, [this](int index) {
+        m_settings->bottomDevelopmentTool = index;
+        m_settings->save();
+        updateDevelopmentActions();
+    });
+    connect(m_webPlaygroundDock, &QDockWidget::visibilityChanged, this, &MainWindow::updateDevelopmentActions);
 
     setupMainMenu();
     setupShortcuts();
@@ -129,6 +147,7 @@ MainWindow::MainWindow(Core::Application *app, QWidget *parent)
         || !restoreState(windowState.mainWindowState, MainWindowStateVersion)) {
         m_webPlaygroundDock->hide();
     }
+    updateDevelopmentActions();
     sb->setVisible(m_showSidebarAction->isChecked());
 
     // Setup web settings.
@@ -470,9 +489,29 @@ void MainWindow::setupMainMenu()
     });
 
     action = m_webPlaygroundDock->toggleViewAction();
-    action->setText(tr("Web &Playground"));
-    menu->addAction(action);
-    addAction(action);
+    action->setVisible(false);
+
+    m_showWebPlaygroundAction = menu->addAction(tr("Show Web &Playground"));
+    m_showWebPlaygroundAction->setCheckable(true);
+    addAction(m_showWebPlaygroundAction);
+    connect(m_showWebPlaygroundAction, &QAction::toggled, this, [this](bool checked) {
+        if (checked) {
+            showDevelopmentTool(0);
+        } else if (m_webPlaygroundDock->isVisible() && m_developmentTabs->currentIndex() == 0) {
+            m_webPlaygroundDock->hide();
+        }
+    });
+
+    m_showDeveloperTerminalAction = menu->addAction(tr("Show Developer &Terminal"));
+    m_showDeveloperTerminalAction->setCheckable(true);
+    addAction(m_showDeveloperTerminalAction);
+    connect(m_showDeveloperTerminalAction, &QAction::toggled, this, [this](bool checked) {
+        if (checked) {
+            showDevelopmentTool(1);
+        } else if (m_webPlaygroundDock->isVisible() && m_developmentTabs->currentIndex() == 1) {
+            m_webPlaygroundDock->hide();
+        }
+    });
 
     menu->addSeparator();
 
@@ -631,6 +670,28 @@ void MainWindow::setupMainMenu()
     action->setMenuRole(QAction::AboutRole);
 
     setMenuBar(m_menuBar);
+}
+
+void MainWindow::showDevelopmentTool(int index)
+{
+    m_developmentTabs->setCurrentIndex(index);
+    m_webPlaygroundDock->show();
+    m_webPlaygroundDock->raise();
+    updateDevelopmentActions();
+}
+
+void MainWindow::updateDevelopmentActions()
+{
+    if (!m_showWebPlaygroundAction || !m_showDeveloperTerminalAction) {
+        return;
+    }
+
+    const bool visible = m_webPlaygroundDock->isVisible();
+    const int index = m_developmentTabs->currentIndex();
+    const QSignalBlocker webBlocker(m_showWebPlaygroundAction);
+    const QSignalBlocker terminalBlocker(m_showDeveloperTerminalAction);
+    m_showWebPlaygroundAction->setChecked(visible && index == 0);
+    m_showDeveloperTerminalAction->setChecked(visible && index == 1);
 }
 
 void MainWindow::setupShortcuts()
