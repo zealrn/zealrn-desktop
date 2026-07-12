@@ -63,9 +63,9 @@ MainWindow::MainWindow(Core::Application *app, QWidget *parent)
     , m_settings(app->settings())
 {
 #ifndef PORTABLE_BUILD
-    setWindowTitle(tr("Zeal"));
+    setWindowTitle(tr("ZealRN"));
 #else
-    setWindowTitle(tr("Zeal Portable"));
+    setWindowTitle(tr("ZealRN Portable"));
 #endif
     resize(900, 600); // Default size. May be overridden by restoreGeometry.
 
@@ -363,9 +363,9 @@ void MainWindow::syncLearningNotes()
 void MainWindow::updateWindowTitle(const QString &pageTitle)
 {
 #ifndef PORTABLE_BUILD
-    const auto appName = QStringLiteral("Zeal");
+    const auto appName = QStringLiteral("ZealRN");
 #else
-    const auto appName = QStringLiteral("Zeal Portable");
+    const auto appName = QStringLiteral("ZealRN Portable");
 #endif
 
     // Suppress the " - " separator when the page has no title.
@@ -708,7 +708,7 @@ void MainWindow::setupMainMenu()
     // -> About Action.
     action = menu->addAction(IconHelper::fromTheme(QStringLiteral("help-about"),
                                                    QStringLiteral(":/icons/tabler/info-circle.svg")),
-                             tr("&About Zeal"),
+                             tr("&About ZealRN"),
                              this,
                              [this]() {
         AboutDialog dialog(this);

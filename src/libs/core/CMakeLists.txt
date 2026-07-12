@@ -1,6 +1,7 @@
 add_library(Core STATIC
     application.cpp
     applicationsingleton.cpp
+    docsetstorage.cpp
     extractor.cpp
     filemanager.cpp
     httpserver.cpp

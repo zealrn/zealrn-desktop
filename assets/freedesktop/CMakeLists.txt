@@ -32,15 +32,20 @@ if(ZEAL_VERSION_SUFFIX)
 endif()
 
     configure_file(
-        org.zealdocs.zeal.appdata.xml.in
-        org.zealdocs.zeal.appdata.xml
+        io.github.abnzrdev.zealrn.appdata.xml.in
+        io.github.abnzrdev.zealrn.appdata.xml
     )
 
-    install(FILES ${CMAKE_BINARY_DIR}/assets/freedesktop/org.zealdocs.zeal.appdata.xml
+    install(FILES ${CMAKE_BINARY_DIR}/assets/freedesktop/io.github.abnzrdev.zealrn.appdata.xml
             DESTINATION ${KDE_INSTALL_METAINFODIR}
     )
 
-    install(FILES "org.zealdocs.zeal.desktop"
+    install(FILES "io.github.abnzrdev.zealrn.desktop"
             DESTINATION ${KDE_INSTALL_APPDIR}
+    )
+
+    install(FILES "sc-apps-zeal.svg"
+            DESTINATION "${KDE_INSTALL_ICONDIR}/hicolor/scalable/apps"
+            RENAME "zealrn.svg"
     )
 endif()

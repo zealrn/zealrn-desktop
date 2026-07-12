@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Name=ZealRN
+GenericName=Documentation Learning Tool
+Comment=Read, annotate, and experiment with offline documentation
+Keywords=documentation;docs;docset;offline;notes;learning;developer;programming;
+Exec=zealrn %u
+Icon=zealrn
+Terminal=false
+Type=Application
+Categories=Development;Documentation;
+StartupWMClass=ZealRN

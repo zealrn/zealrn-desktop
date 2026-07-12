@@ -4,6 +4,7 @@
 
 #include <core/application.h>
 #include <core/applicationsingleton.h>
+#include <core/docsetstorage.h>
 #include <core/httpserver.h>
 #include <core/settings.h>
 #include <registry/searchquery.h>
@@ -16,9 +17,12 @@
 #include <QDataStream>
 #include <QDesktopServices>
 #include <QDir>
+#include <QFileDialog>
 #include <QIcon>
 #include <QMessageBox>
 #include <QPalette>
+#include <QPushButton>
+#include <QSettings>
 #include <QStyle>
 #include <QStyleFactory>
 #include <QStyleHints>
@@ -28,7 +32,6 @@
 
 #ifdef Q_OS_WINDOWS
 #include <QAbstractNativeEventFilter>
-#include <QSettings>
 #include <qt_windows.h>
 
 #include <utility> // for std::ignore
@@ -189,13 +192,57 @@ QString stripParameterUrl(const QString &url, const QString &scheme)
 void showStartupError(const QString &message)
 {
     QTextStream(stderr) << message << '\n';
-    QMessageBox::critical(nullptr, QObject::tr("Zeal"), message);
+    QMessageBox::critical(nullptr, QObject::tr("ZealRN"), message);
+}
+
+void configureInitialDocsetStorage()
+{
+    QSettings settings;
+    settings.beginGroup(QStringLiteral("docsets"));
+    const bool configured = settings.contains(QStringLiteral("path"));
+    settings.endGroup();
+    if (configured) {
+        return;
+    }
+
+    const QStringList existingPaths = Zeal::Core::existingZealDocsetPaths(QDir::homePath());
+    if (existingPaths.isEmpty()) {
+        return;
+    }
+
+    QMessageBox prompt;
+    prompt.setWindowTitle(QObject::tr("ZealRN Documentation"));
+    prompt.setIcon(QMessageBox::Question);
+    prompt.setText(QObject::tr("Reuse your existing Zeal documentation library?"));
+    prompt.setInformativeText(existingPaths.first());
+    QAbstractButton *reuseButton = prompt.addButton(QObject::tr("Reuse Library"), QMessageBox::AcceptRole);
+    QAbstractButton *chooseButton = prompt.addButton(QObject::tr("Choose Another Directory"), QMessageBox::ActionRole);
+    prompt.addButton(QObject::tr("Start Empty"), QMessageBox::RejectRole);
+    prompt.exec();
+
+    QString selectedPath;
+    bool readOnly = false;
+    if (prompt.clickedButton() == reuseButton) {
+        selectedPath = existingPaths.first();
+        readOnly = true;
+    } else if (prompt.clickedButton() == chooseButton) {
+        selectedPath = QFileDialog::getExistingDirectory(nullptr, QObject::tr("Choose Documentation Directory"));
+    }
+    if (selectedPath.isEmpty()) {
+        return;
+    }
+
+    settings.beginGroup(QStringLiteral("docsets"));
+    settings.setValue(QStringLiteral("path"), selectedPath);
+    settings.setValue(QStringLiteral("read_only"), readOnly);
+    settings.endGroup();
+    settings.sync();
 }
 
 CommandLineParameters parseCommandLine(const QStringList &arguments)
 {
     QCommandLineParser parser;
-    parser.setApplicationDescription(QObject::tr("Zeal - Offline documentation browser."));
+    parser.setApplicationDescription(QObject::tr("ZealRN - Offline documentation learning tool."));
     parser.addHelpOption();
     parser.addVersionOption();
 
@@ -320,10 +367,10 @@ int main(int argc, char *argv[])
     // Do not allow Qt version lower than the app was compiled with.
     QT_REQUIRE_VERSION(argc, argv, QT_VERSION_STR)
 
-    QCoreApplication::setApplicationName(QStringLiteral("Zeal"));
+    QCoreApplication::setApplicationName(QStringLiteral("ZealRN"));
     QCoreApplication::setApplicationVersion(ZEAL_VERSION);
-    QCoreApplication::setOrganizationDomain(QStringLiteral("zealdocs.org"));
-    QCoreApplication::setOrganizationName(QStringLiteral("Zeal"));
+    QCoreApplication::setOrganizationDomain(QStringLiteral("abnzrdev.github.io"));
+    QCoreApplication::setOrganizationName(QStringLiteral("abnzrdev"));
 
     // Handle --version (and --attach-console) before creating QApplication to avoid
     // initializing the platform/graphics stack just to print a version string.
@@ -400,12 +447,13 @@ int main(int argc, char *argv[])
     }
 
     // Set application-wide window icon. All message boxes and other windows will use it by default.
-    QApplication::setDesktopFileName(QStringLiteral("org.zealdocs.zeal"));
-    QApplication::setWindowIcon(QIcon::fromTheme(QStringLiteral("zeal"), QIcon(QStringLiteral(":/zeal.svg"))));
+    QApplication::setDesktopFileName(QStringLiteral("io.github.abnzrdev.zealrn"));
+    QApplication::setWindowIcon(QIcon::fromTheme(QStringLiteral("zealrn"), QIcon(QStringLiteral(":/zeal.svg"))));
 
     QDir::setSearchPaths(QStringLiteral("typeIcon"), {QStringLiteral(":/icons/type")});
 
     using Zeal::Core::Application;
+    configureInitialDocsetStorage();
     Application app(clParams.httpServerPort);
 
     const auto applyAppearance = [&app, systemStyleName]() {

@@ -89,7 +89,8 @@ DocsetsDialog::DocsetsDialog(Core::Application *app, QWidget *parent)
 
     loadDocsetList();
 
-    m_isStorageReadOnly = !isDirWritable(m_application->settings()->docsetPath);
+    m_isStorageReadOnly = m_application->settings()->docsetPathReadOnly
+                       || !isDirWritable(m_application->settings()->docsetPath);
 
 #ifdef Q_OS_MACOS
     ui->availableDocsetList->setAttribute(Qt::WA_MacShowFocusRect, false);
@@ -143,7 +144,7 @@ void DocsetsDialog::addDashFeed()
     }
 
     QString feedUrl = QInputDialog::getText(this,
-                                            QStringLiteral("Zeal"),
+                                            QStringLiteral("ZealRN"),
                                             tr("Feed URL:"),
                                             QLineEdit::Normal,
                                             clipboardText);
@@ -198,11 +199,11 @@ void DocsetsDialog::removeSelectedDocsets()
     if (selectedIndexes.size() == 1) {
         const QString docsetTitle = selectedIndexes.first().data().toString();
         rc = QMessageBox::question(this,
-                                   QStringLiteral("Zeal"),
+                                   QStringLiteral("ZealRN"),
                                    tr("Remove <b>%1</b> docset?").arg(docsetTitle.toHtmlEscaped()));
     } else {
         rc = QMessageBox::question(this,
-                                   QStringLiteral("Zeal"),
+                                   QStringLiteral("ZealRN"),
                                    tr("Remove <b>%n</b> docset(s)?",
                                       nullptr,
                                       static_cast<int>(selectedIndexes.size())));
@@ -313,7 +314,7 @@ void DocsetsDialog::downloadCompleted()
                                     .arg(reply->errorString().toHtmlEscaped(),
                                          reply->request().url().toString().toHtmlEscaped());
             const int ret = QMessageBox::warning(this,
-                                                 QStringLiteral("Zeal"),
+                                                 QStringLiteral("ZealRN"),
                                                  msg,
                                                  QMessageBox::Retry | QMessageBox::Cancel);
 
@@ -350,7 +351,7 @@ void DocsetsDialog::downloadCompleted()
                                                                                          reply->readAll());
 
         if (metadata.urls().isEmpty()) {
-            QMessageBox::warning(this, QStringLiteral("Zeal"), tr("Invalid docset feed!"));
+            QMessageBox::warning(this, QStringLiteral("ZealRN"), tr("Invalid docset feed!"));
             break;
         }
 
@@ -395,7 +396,7 @@ void DocsetsDialog::downloadCompleted()
                 listItem->setData(DocsetListItemDelegate::ShowProgressRole, false);
             }
             QMessageBox::warning(this,
-                                 QStringLiteral("Zeal"),
+                                 QStringLiteral("ZealRN"),
                                  tr("Cannot create a temporary file to install <b>%1</b>.")
                                      .arg(docsetName.toHtmlEscaped()));
             break;
@@ -533,7 +534,7 @@ void DocsetsDialog::extractionError(const QString &filePath, const QString &erro
     const QString docsetName = docsetNameForTmpFilePath(filePath);
 
     QMessageBox::warning(this,
-                         QStringLiteral("Zeal"),
+                         QStringLiteral("ZealRN"),
                          tr("Cannot extract docset <b>%1</b>: %2")
                              .arg(docsetName.toHtmlEscaped(), errorString.toHtmlEscaped()));
 
@@ -889,7 +890,7 @@ void DocsetsDialog::processDocsetListReply(QNetworkReply *reply)
                   static_cast<long long>(jsonError.offset),
                   qPrintable(jsonError.errorString()));
         const QMessageBox::StandardButton rc = QMessageBox::warning(this,
-                                                                    QStringLiteral("Zeal"),
+                                                                    QStringLiteral("ZealRN"),
                                                                     tr("Server returned a corrupted docset list."),
                                                                     QMessageBox::Retry | QMessageBox::Cancel);
 
@@ -1046,7 +1047,7 @@ void DocsetsDialog::onTarixIndexFailed(QNetworkReply *reply)
     }
 
     QMessageBox box(QMessageBox::Warning,
-                    QStringLiteral("Zeal"),
+                    QStringLiteral("ZealRN"),
                     tr("Could not download the compact index for <b>%1</b>. Installing without it will be "
                        "slower and use considerably more disk space.")
                         .arg(docsetName.toHtmlEscaped()),
@@ -1095,7 +1096,7 @@ void DocsetsDialog::removeDocset(const QString &name)
         const QString error = tr("Cannot remove directory <b>%1</b>! It might be in use"
                                  " by another process.")
                                   .arg(docsetPath.toHtmlEscaped());
-        QMessageBox::warning(this, QStringLiteral("Zeal"), error);
+        QMessageBox::warning(this, QStringLiteral("ZealRN"), error);
         return;
     }
 

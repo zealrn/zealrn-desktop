@@ -263,7 +263,11 @@ void SettingsDialog::saveSettings()
 
     settings->showShortcut = ui->toolButton->keySequence();
 
-    settings->docsetPath = QDir::fromNativeSeparators(ui->docsetStorageEdit->text());
+    const QString docsetPath = QDir::fromNativeSeparators(ui->docsetStorageEdit->text());
+    if (docsetPath != settings->docsetPath) {
+        settings->docsetPathReadOnly = false;
+    }
+    settings->docsetPath = docsetPath;
 
     // Tabs Tab
     settings->openNewTabAfterActive = ui->openNewTabAfterActive->isChecked();

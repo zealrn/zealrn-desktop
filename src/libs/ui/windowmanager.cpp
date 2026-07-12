@@ -27,20 +27,20 @@ WindowManager::WindowManager(Core::Application *application, QObject *parent)
 {
     // Update-check dialogs are session-level, not per-window.
     connect(m_application, &Core::Application::updateCheckError, this, [this](const QString &message) {
-        QMessageBox::warning(activeWindow(), QStringLiteral("Zeal"), message.toHtmlEscaped());
+        QMessageBox::warning(activeWindow(), QStringLiteral("ZealRN"), message.toHtmlEscaped());
     });
 
     connect(m_application, &Core::Application::updateCheckDone, this, [this](const QString &version) {
         if (version.isEmpty()) {
-            QMessageBox::information(activeWindow(), QStringLiteral("Zeal"), tr("You are using the latest version."));
+            QMessageBox::information(activeWindow(), QStringLiteral("ZealRN"), tr("You are using the latest version."));
             return;
         }
 
         // TODO: Remove this ugly workaround for #637.
         qApp->setQuitOnLastWindowClosed(false);
         const int ret = QMessageBox::information(activeWindow(),
-                                                 QStringLiteral("Zeal"),
-                                                 tr("Zeal <b>%1</b> is available. Open download page?")
+                                                 QStringLiteral("ZealRN"),
+                                                 tr("ZealRN <b>%1</b> is available. Open download page?")
                                                      .arg(version.toHtmlEscaped()),
                                                  QMessageBox::Yes | QMessageBox::No,
                                                  QMessageBox::Yes);
@@ -143,7 +143,7 @@ void WindowManager::createTrayIcon()
     const QIcon trayIcon = QIcon::fromTheme(QStringLiteral("zeal-tray"), QIcon(QStringLiteral(":/zeal-tray.svg")));
 #endif
     m_trayIcon->setIcon(trayIcon);
-    m_trayIcon->setToolTip(QStringLiteral("Zeal"));
+    m_trayIcon->setToolTip(QStringLiteral("ZealRN"));
 
     connect(m_trayIcon, &QSystemTrayIcon::activated, this, [this](QSystemTrayIcon::ActivationReason reason) {
         if (reason != QSystemTrayIcon::Trigger && reason != QSystemTrayIcon::DoubleClick) {
@@ -160,7 +160,7 @@ void WindowManager::createTrayIcon()
     });
 
     auto *trayIconMenu = new QMenu();
-    QAction *toggleAction = trayIconMenu->addAction(tr("Show Zeal"), this, [this]() {
+    QAction *toggleAction = trayIconMenu->addAction(tr("Show ZealRN"), this, [this]() {
         MainWindow *target = activeWindow();
         if (target == nullptr) {
             createMainWindow()->bringToFront();
@@ -173,7 +173,7 @@ void WindowManager::createTrayIcon()
     connect(trayIconMenu, &QMenu::aboutToShow, this, [this, toggleAction]() {
         const MainWindow *target = activeWindow();
         const bool visible = target != nullptr && target->isVisible();
-        toggleAction->setText(visible ? tr("Minimize to Tray") : tr("Show Zeal"));
+        toggleAction->setText(visible ? tr("Minimize to Tray") : tr("Show ZealRN"));
     });
 
     trayIconMenu->addSeparator();

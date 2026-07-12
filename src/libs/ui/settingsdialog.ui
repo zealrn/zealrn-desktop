@@ -91,7 +91,7 @@
           <item row="0" column="0">
            <widget class="QLabel" name="label_9">
             <property name="text">
-             <string>Show Zeal:</string>
+             <string>Show ZealRN:</string>
             </property>
            </widget>
           </item>

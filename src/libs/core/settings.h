@@ -106,6 +106,7 @@ public:
 
     // Other
     QString docsetPath;
+    bool docsetPathReadOnly = false;
 
     explicit Settings(QObject *parent = nullptr);
     ~Settings() override;

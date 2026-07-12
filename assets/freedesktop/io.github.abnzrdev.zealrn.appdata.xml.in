@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.abnzrdev.zealrn</id>
+  <launchable type="desktop-id">io.github.abnzrdev.zealrn.desktop</launchable>
+  <name>ZealRN</name>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <developer id="io.github.abnzrdev"><name>ZealRN contributors</name></developer>
+  <summary>Learn from offline documentation</summary>
+  <description>
+    <p>ZealRN builds on the Zeal offline documentation browser with page-linked learning notes and an offline web playground.</p>
+    <p>Documentation and notes remain local. Existing Zeal docsets can be reused without copying them.</p>
+  </description>
+  <categories><category>Development</category><category>Documentation</category></categories>
+  <url type="homepage">https://github.com/abnzrdev/zealrn</url>
+  <url type="vcs-browser">https://github.com/abnzrdev/zealrn</url>
+  <releases>
+    <release date="2026-07-13" version="0.1.0-alpha" type="development" />
+  </releases>
+  <content_rating type="oars-1.1" />
+</component>

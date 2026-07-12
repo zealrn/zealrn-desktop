@@ -278,6 +278,7 @@ void Settings::load()
     settings->endGroup();
 
     settings->beginGroup(GroupDocsets);
+    docsetPathReadOnly = settings->value(QStringLiteral("read_only"), false).toBool();
     if (settings->contains(QStringLiteral("path"))) {
         docsetPath = settings->value(QStringLiteral("path")).toString();
     } else {
@@ -371,6 +372,7 @@ void Settings::save()
 
     settings->beginGroup(GroupDocsets);
     settings->setValue(QStringLiteral("path"), docsetPath);
+    settings->setValue(QStringLiteral("read_only"), docsetPathReadOnly);
     settings->endGroup();
 
     settings->beginGroup(GroupInternal);

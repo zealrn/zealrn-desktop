@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "../settings.h"
+#include "../docsetstorage.h"
 
+#include <QDir>
 #include <QSettings>
 #include <QTemporaryDir>
 #include <QtTest>
@@ -23,6 +25,8 @@ private slots:
     void qsettingsRestoresAfterReopen();
     void terminalSettingsRestoreAfterReopen();
     void invalidBottomToolFallsBackToWebPlayground();
+    void sharedDocsetSettingRestoresAfterReopen();
+    void existingZealDocsetPathsFindsNativeAndFlatpakLibraries();
 };
 
 void SettingsTest::initTestCase()
@@ -136,6 +140,31 @@ void SettingsTest::invalidBottomToolFallsBackToWebPlayground()
 
     Settings settings;
     QCOMPARE(settings.bottomDevelopmentTool, 0);
+}
+
+void SettingsTest::sharedDocsetSettingRestoresAfterReopen()
+{
+    QTemporaryDir dir;
+    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, dir.path());
+    {
+        Settings settings;
+        settings.docsetPathReadOnly = true;
+        settings.save();
+    }
+    Settings restored;
+    QVERIFY(restored.docsetPathReadOnly);
+}
+
+void SettingsTest::existingZealDocsetPathsFindsNativeAndFlatpakLibraries()
+{
+    QTemporaryDir home;
+    const QString native = QDir(home.path()).filePath(QStringLiteral(".local/share/Zeal/Zeal/docsets"));
+    const QString flatpak = QDir(home.path())
+                                .filePath(QStringLiteral(".var/app/org.zealdocs.Zeal/data/Zeal/Zeal/docsets"));
+    QVERIFY(QDir().mkpath(native));
+    QVERIFY(QDir().mkpath(flatpak));
+
+    QCOMPARE(Zeal::Core::existingZealDocsetPaths(home.path()), QStringList({flatpak, native}));
 }
 
 QTEST_MAIN(SettingsTest)

@@ -16,14 +16,14 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 # ZEAL_RELEASE_VERSION is the last released version, updated by `just release-prepare`.
 # When both match, the build is treated as a release; otherwise it's a dev build.
 # The `# x-version` marker on each version line acts as a sed anchor for the bump.
-project(Zeal
-    VERSION 0.8.2 # x-version
-    DESCRIPTION "A simple documentation browser."
-    HOMEPAGE_URL "https://zealdocs.org"
+project(ZealRN
+    VERSION 0.1.0 # x-version
+    DESCRIPTION "An offline documentation learning tool."
+    HOMEPAGE_URL "https://github.com/abnzrdev/zealrn"
     LANGUAGES CXX
 )
 
-set(ZEAL_RELEASE_VERSION "0.8.1") # x-version
+set(ZEAL_RELEASE_VERSION "0.1.0") # x-version
 
 include(ZealHelpers)
 
@@ -76,7 +76,8 @@ else()
     message(NOTICE "Dev build: ${PROJECT_VERSION}${ZEAL_VERSION_SUFFIX}")
 endif()
 
-set(ZEAL_VERSION_FULL "${Zeal_VERSION}${ZEAL_VERSION_SUFFIX}")
+set(ZEAL_VERSION_SUFFIX "-alpha")
+set(ZEAL_VERSION_FULL "${PROJECT_VERSION}${ZEAL_VERSION_SUFFIX}")
 message(NOTICE "Calculated Zeal version: ${ZEAL_VERSION_FULL}")
 
 file(WRITE "${CMAKE_BINARY_DIR}/zeal_version" ${ZEAL_VERSION_FULL})
@@ -97,7 +98,7 @@ endif()
 
 set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 
-option(ZEAL_FEATURE_UPDATE_CHECK "Automatic update check on startup" ON)
+option(ZEAL_FEATURE_UPDATE_CHECK "Automatic update check on startup" OFF)
 if(ZEAL_FEATURE_UPDATE_CHECK)
     add_compile_definitions(ZEAL_FEATURE_UPDATE_CHECK)
 endif()
