@@ -5,6 +5,8 @@
 
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QKeyEvent>
+#include <QKeySequence>
 #include <QVBoxLayout>
 #include <QWebChannel>
 #include <QWebEnginePage>
@@ -45,6 +47,7 @@ WebPlaygroundEditor::WebPlaygroundEditor(bool dark, QWidget *parent)
     m_channel->registerObject(QStringLiteral("playgroundBridge"), m_bridge);
     page->setWebChannel(m_channel);
     m_view->setPage(page);
+    m_view->installEventFilter(this);
 
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -56,6 +59,18 @@ WebPlaygroundEditor::WebPlaygroundEditor(bool dark, QWidget *parent)
     });
     connect(m_bridge, &WebPlaygroundEditorBridge::changed, this, &WebPlaygroundEditor::contentChanged);
     m_view->load(QUrl(QStringLiteral("qrc:/playground/editor.html")));
+}
+
+bool WebPlaygroundEditor::eventFilter(QObject *watched, QEvent *event)
+{
+    if (watched == m_view && event->type() == QEvent::ShortcutOverride) {
+        auto *keyEvent = static_cast<QKeyEvent *>(event);
+        if (keyEvent->matches(QKeySequence::Find)) {
+            event->accept();
+            return true;
+        }
+    }
+    return QWidget::eventFilter(watched, event);
 }
 
 void WebPlaygroundEditor::requestDocuments(std::function<void(WebPlayground::Documents)> callback) const

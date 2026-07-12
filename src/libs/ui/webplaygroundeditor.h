@@ -50,6 +50,9 @@ signals:
     void ready();
     void contentChanged();
 
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override;
+
 private:
     void runJavaScript(const QString &script) const;
 
