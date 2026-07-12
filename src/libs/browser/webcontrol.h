@@ -29,6 +29,7 @@ public:
 
     QString title() const;
     QUrl url() const;
+    QString selectedText() const;
 
     QWebEngineHistory *history() const;
     void restoreHistory(const QByteArray &array);

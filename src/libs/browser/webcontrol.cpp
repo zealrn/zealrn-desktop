@@ -239,6 +239,11 @@ QUrl WebControl::url() const
     return m_webView->url();
 }
 
+QString WebControl::selectedText() const
+{
+    return m_webView->page()->selectedText();
+}
+
 QWebEngineHistory *WebControl::history() const
 {
     return m_webView->history();

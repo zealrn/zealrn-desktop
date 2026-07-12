@@ -36,6 +36,7 @@ class SearchQuery;
 namespace WidgetUi {
 
 class BrowserTab;
+class LearningNotesPanel;
 class SidebarViewProvider;
 
 class MainWindow : public QMainWindow
@@ -79,6 +80,7 @@ private:
     BrowserTab *tabAt(int index) const;
 
     void syncTabState(BrowserTab *tab);
+    void syncLearningNotes();
     void updateWindowTitle(const QString &pageTitle);
 
     Core::Application *m_application = nullptr;
@@ -95,6 +97,7 @@ private:
     QStackedWidget *m_webViewStack = nullptr;
     QDockWidget *m_webPlaygroundDock = nullptr;
     QTabWidget *m_developmentTabs = nullptr;
+    LearningNotesPanel *m_learningNotesPanel = nullptr;
 
     // TODO: Replace with proper action manager.
     QAction *m_showDocsetManagerAction = nullptr;

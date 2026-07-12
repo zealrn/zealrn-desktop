@@ -66,6 +66,7 @@ BrowserTab::BrowserTab(SearchSidebar *sidebarToClone, QWidget *parent)
 
         m_backButton->setEnabled(m_webControl->canGoBack());
         m_forwardButton->setEnabled(m_webControl->canGoForward());
+        emit urlChanged(url);
     });
 
     // Setup SearchSidebar. It is owned by this tab but lives outside the widget

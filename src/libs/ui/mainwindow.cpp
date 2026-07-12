@@ -23,6 +23,8 @@
 #include <core/session.h>
 #include <core/settings.h>
 #include <qxtglobalshortcut/qxtglobalshortcut.h>
+#include <registry/docset.h>
+#include <registry/docsetregistry.h>
 #include <sidebar/container.h>
 #include <sidebar/proxyview.h>
 
@@ -122,12 +124,17 @@ MainWindow::MainWindow(Core::Application *app, QWidget *parent)
     auto *sb = new Sidebar::Container();
     sb->addView(sbView);
 
-    auto *learningNotesPanel = new LearningNotesPanel(m_splitter);
-    learningNotesPanel->setMinimumWidth(MinimumLearningNotesWidth);
+    m_learningNotesPanel = new LearningNotesPanel(m_splitter);
+    m_learningNotesPanel->setMinimumWidth(MinimumLearningNotesWidth);
+    connect(m_learningNotesPanel, &LearningNotesPanel::addSelectionRequested, this, [this]() {
+        if (const auto *tab = currentTab()) {
+            m_learningNotesPanel->appendSelection(tab->webControl()->selectedText());
+        }
+    });
 
     // Setup splitter.
     m_splitter->insertWidget(0, sb);
-    m_splitter->addWidget(learningNotesPanel);
+    m_splitter->addWidget(m_learningNotesPanel);
     m_splitter->setStretchFactor(0, 0);
     m_splitter->setStretchFactor(1, 1);
     m_splitter->setStretchFactor(2, 0);
@@ -172,6 +179,7 @@ MainWindow::MainWindow(Core::Application *app, QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+    m_learningNotesPanel->flush();
     Core::WindowState &windowState = m_application->session()->primaryWindow();
     windowState.mainWindowState = saveState(MainWindowStateVersion);
     windowState.splitterState = m_splitter->saveState();
@@ -198,6 +206,10 @@ void MainWindow::closeTab(int index)
     BrowserTab *tab = tabAt(index);
     if (tab == nullptr) {
         return;
+    }
+
+    if (tab == currentTab()) {
+        m_learningNotesPanel->flush();
     }
 
     m_webViewStack->removeWidget(tab);
@@ -278,6 +290,12 @@ void MainWindow::addTab(BrowserTab *tab, int index, bool activate)
         // Only update the window title for the active tab.
         if (tab == currentTab()) {
             updateWindowTitle(title);
+            syncLearningNotes();
+        }
+    });
+    connect(tab, &BrowserTab::urlChanged, this, [this, tab]() {
+        if (tab == currentTab()) {
+            syncLearningNotes();
         }
     });
 
@@ -310,6 +328,27 @@ BrowserTab *MainWindow::currentTab() const
 BrowserTab *MainWindow::tabAt(int index) const
 {
     return qobject_cast<BrowserTab *>(m_webViewStack->widget(index));
+}
+
+void MainWindow::syncLearningNotes()
+{
+    const BrowserTab *tab = currentTab();
+    if (tab == nullptr) {
+        m_learningNotesPanel->setPage({});
+        return;
+    }
+
+    const QUrl url = tab->webControl()->url();
+    const Registry::Docset *docset = m_application->docsetRegistry()->docsetForUrl(url);
+    if (docset == nullptr) {
+        m_learningNotesPanel->setPage({});
+        return;
+    }
+    m_learningNotesPanel->setPage(LearningNotePage::fromUrl(docset->name(),
+                                                           docset->title(),
+                                                           docset->baseUrl(),
+                                                           url,
+                                                           tab->webControl()->title()));
 }
 
 void MainWindow::updateWindowTitle(const QString &pageTitle)
@@ -728,6 +767,7 @@ void MainWindow::setupTabBar()
         updateWindowTitle(tab->webControl()->title());
 
         m_webViewStack->setCurrentIndex(index);
+        syncLearningNotes();
         emit currentTabChanged();
     });
     connect(m_tabBar, &QTabBar::tabCloseRequested, this, &MainWindow::closeTab);

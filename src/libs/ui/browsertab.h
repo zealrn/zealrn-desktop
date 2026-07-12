@@ -43,6 +43,7 @@ public:
 signals:
     void iconChanged(const QIcon &icon);
     void titleChanged(const QString &title);
+    void urlChanged(const QUrl &url);
 
 private:
     // Shared constructor. Clones sidebarToClone when set, otherwise builds a fresh sidebar.
