@@ -18,6 +18,7 @@ add_library(Ui STATIC
     searchsidebar.cpp
     settingsdialog.cpp
     sidebarviewprovider.cpp
+    terminalsupport.cpp
     webplaygroundeditor.cpp
     webplaygroundpanel.cpp
     webplaygroundpreview.cpp
