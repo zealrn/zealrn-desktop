@@ -18,6 +18,7 @@ add_library(Ui STATIC
     searchsidebar.cpp
     settingsdialog.cpp
     sidebarviewprovider.cpp
+    webplaygroundeditor.cpp
     webplaygroundpanel.cpp
     webplaygroundproject.cpp
     windowmanager.cpp
@@ -28,8 +29,8 @@ target_link_libraries(Ui PRIVATE Browser Sidebar QxtGlobalShortcut Widgets Regis
 
 zeal_attach_qt_pch(Ui <QDialog> <QWidget>)
 
-find_package(Qt6 COMPONENTS WebEngineWidgets REQUIRED)
-target_link_libraries(Ui PRIVATE Qt6::WebEngineWidgets)
+find_package(Qt6 COMPONENTS WebChannel WebEngineWidgets REQUIRED)
+target_link_libraries(Ui PRIVATE Qt6::WebChannel Qt6::WebEngineWidgets)
 
 if(BUILD_TESTING)
     find_package(Qt6 COMPONENTS Test REQUIRED)

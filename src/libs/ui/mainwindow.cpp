@@ -67,7 +67,7 @@ MainWindow::MainWindow(Core::Application *app, QWidget *parent)
     m_webPlaygroundDock = new QDockWidget(tr("Web Playground"), this);
     m_webPlaygroundDock->setObjectName(QStringLiteral("webPlaygroundDock"));
     m_webPlaygroundDock->setAllowedAreas(Qt::BottomDockWidgetArea);
-    auto *webPlaygroundPanel = new WebPlaygroundPanel(m_webPlaygroundDock);
+    auto *webPlaygroundPanel = new WebPlaygroundPanel(m_settings, m_webPlaygroundDock);
     m_webPlaygroundDock->setWidget(webPlaygroundPanel);
     addDockWidget(Qt::BottomDockWidgetArea, m_webPlaygroundDock);
     m_webPlaygroundDock->hide();

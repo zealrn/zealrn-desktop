@@ -37,10 +37,10 @@
 
 **Modify:** `src/libs/ui/webplaygroundpanel.h/.cpp`, UI CMake.
 
-- [ ] Create the editor profile/view only on first panel show.
-- [ ] Wire QWebChannel readiness/change notifications and asynchronous snapshots.
-- [ ] Preserve three contents and histories across tab, hide/show, resize, and theme updates.
-- [ ] Enable Run/Auto Run/Reset only when ready; build, smoke test, review, and commit.
+- [x] Create the editor profile/view only on first panel show.
+- [x] Wire QWebChannel readiness/change notifications and asynchronous snapshots.
+- [x] Preserve three contents and histories across tab, hide/show, resize, and theme updates.
+- [x] Enable Run/Auto Run/Reset only when ready; build, smoke test, review, and commit.
 
 ## Task 4: Isolated Preview And Console
 
