@@ -1,104 +1,123 @@
-# Zeal
+# ZealRN
 
-[![Discord](https://img.shields.io/badge/chat-on%20discord-5865f2?style=flat-square)](https://go.zealdocs.org/l/discord)
-[![Telegram Channel](https://img.shields.io/badge/follow-on%20telegram-179cde?style=flat-square)](https://go.zealdocs.org/l/telegram)
-[![X (Twitter)](https://img.shields.io/badge/follow-on%20x-000000?style=flat-square)](https://go.zealdocs.org/l/x)
+ZealRN is an offline documentation learning tool:
 
-[![Release](https://img.shields.io/github/release/zealdocs/zeal?style=flat-square)](https://github.com/zealdocs/zeal/releases)
-[![Build Check](https://img.shields.io/github/actions/workflow/status/zealdocs/zeal/build-check.yaml?style=flat-square)](https://github.com/zealdocs/zeal/actions/workflows/build-check.yaml)
-[![License](https://img.shields.io/github/license/zealdocs/zeal?style=flat-square)](COPYING)
+**Read documentation -> take notes -> experiment with code -> review later.**
 
-Zeal is an offline documentation browser: your personal reference library, searchable in an instant and available
-without a connection. Originally inspired by [Dash](https://kapeli.com/dash), it supports the same docset format.
+It is based on [Zeal](https://github.com/zealdocs/zeal) and keeps Zeal's fast offline docset browsing while adding page-linked learning notes, an offline HTML/CSS/JavaScript playground, application appearance settings, and developer-terminal integration.
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/readme-dark.png">
-  <img alt="Zeal showing instant search results across multiple docsets" src="assets/screenshots/readme-light.png">
-</picture>
+## Alpha Features
 
-## Download
+- Browse and search installed Dash/Zeal docsets offline.
+- Save one local plain-text note per documentation page.
+- Autosave notes and capture selected documentation text as a Markdown blockquote.
+- Search, edit, delete, and reopen notes from All Notes.
+- Export notes as Markdown, searchable PDF, JSON, or a ZIP archive.
+- Back up the local SQLite notes database.
+- Experiment with HTML, CSS, and JavaScript in an isolated, network-blocked preview.
+- Use System, Light, or Dark appearance.
+- Open an external developer terminal; embedded QTermWidget is used when available at build time.
 
-<a href="https://flathub.org/apps/org.zealdocs.Zeal"><img height="44" alt="Get it on Flathub"
-  src="https://flathub.org/api/badge?svg&amp;locale=en"/></a>
-<a href="https://snapcraft.io/zeal"><img height="44" alt="Get it from the Snap Store"
-  src="https://snapcraft.io/static/images/badges/en/snap-store-black.svg"/></a>
+## Install
 
-Binary builds for Windows and other installation options are available on the
-[download page](https://zealdocs.org/download).
+### User-Local AppImage
 
-## How to use
+From a release checkout containing `dist/`:
 
-After installing Zeal, go to `File → Docset Library`, select the docsets you want, and click the `Download` button.
-
-### Query and filter docsets
-
-Limit the search scope by prefixing your query with a docset name and a colon:
-
-`cpp:vector`
-
-To search multiple docsets, separate them with a comma:
-
-`python,django:string`
-
-### Command line
-
-You can also start Zeal with a query from the command line:
-
-`zeal python:pprint`
-
-## How to compile
-
-Detailed, up-to-date build instructions for each platform are available in the
-[wiki](https://github.com/zealdocs/zeal/wiki). The bare minimum is described below.
-
-### Build dependencies
-
-* [CMake](https://cmake.org/) and [Ninja](https://ninja-build.org/).
-* [Qt](https://www.qt.io/) version 6.4.2 or later. Required modules besides Qt Base: Svg, WebEngine.
-* [libarchive](https://libarchive.org/).
-* [SQLite](https://sqlite.org/).
-* Linux/BSD platforms: `extra-cmake-modules`.
-* X11 platforms only: `libxkbcommon`, `xcb-util-keysyms`.
-* Optional Linux embedded Developer Terminal: Qt 6 [QTermWidget](https://github.com/lxqt/qtermwidget) 2.x.
-  Without it, Zeal builds with Open External Terminal as the fallback.
-
-### Build instructions
-
-```shell
-cmake --preset release
-cmake --build --preset release
+```bash
+./scripts/install-user-local.sh
+~/.local/bin/zealrn
 ```
 
-Set `-DZEALRN_ENABLE_TERMINAL=OFF` to disable embedded terminal discovery explicitly. The default is `ON`; CMake
-enables the QTermWidget backend only when the Qt 6 `qtermwidget6` package is available.
-Windows currently uses Open External Terminal while embedded ConPTY rendering remains pending.
+This installs without `sudo` under `~/.local/opt/zealrn/` and adds the **ZealRN** desktop entry. The installer verifies `dist/SHA256SUMS` and backs up a replaced installation.
 
-The resulting binary is `build/release/zeal` (`zeal.exe` on Windows).
+Uninstall the application without deleting settings, notes, exports, or docsets:
 
-## Create your own docsets
+```bash
+./scripts/uninstall-user-local.sh
+```
 
-Follow the instructions in the [Dash docset generation guide](https://kapeli.com/docsets).
+### Portable AppImage
 
-## Contributing
+```bash
+chmod +x dist/ZealRN-0.1.0-alpha-x86_64.AppImage
+./dist/ZealRN-0.1.0-alpha-x86_64.AppImage
+```
 
-Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to build Zeal, the conventions to follow,
-and what to expect from review.
+### Debian Package
 
-## Contact and support
+```bash
+sudo apt install ./dist/zealrn_0.1.0-alpha_amd64.deb
+```
 
-Ways to get help or reach the developers:
+The Debian package is not installed automatically by the build or user-local installer.
 
-* Report bugs and submit feature requests to [GitHub issues](https://github.com/zealdocs/zeal/issues).
-* Ask questions in [GitHub discussions](https://github.com/zealdocs/zeal/discussions).
-* Chat with the developers and other Zeal users on [Discord](https://go.zealdocs.org/l/discord).
-* Subscribe to the [Telegram channel](https://go.zealdocs.org/l/telegram) for announcements.
-* Follow [@zealdocs](https://go.zealdocs.org/l/x) on X for news and updates.
-* Email <support@zealdocs.org> for anything private or sensitive.
+## Local Data
 
-## License
+ZealRN uses a separate identity and does not reuse Zeal settings automatically.
 
-This software is licensed under the terms of the GNU General Public License version 3 (GPLv3) or later. Full text of
-the license is available in the [COPYING](COPYING) file and [online](https://www.gnu.org/licenses/gpl-3.0.html).
+- Settings: `~/.config/abnzrdev/ZealRN.conf`
+- Data and notes: `~/.local/share/abnzrdev/ZealRN/`
+- Notes database: `~/.local/share/abnzrdev/ZealRN/learning-notes.sqlite`
+- Default docsets: `~/.local/share/abnzrdev/ZealRN/docsets/`
 
-Bundled third-party components are licensed under their respective terms; the repository is
-[REUSE](https://reuse.software/)-compliant, with all license texts available in the [LICENSES](LICENSES) directory.
+On first launch, ZealRN can reuse a native or Flatpak Zeal docset directory without copying it. Reused libraries are opened read-only in ZealRN to avoid concurrent install/remove operations. Choose another directory in Preferences to use writable ZealRN-managed docsets.
+
+## Learning Notes
+
+Open a real docset page, write in **Learning Notes**, and use **Save Note** or `Ctrl+S`. Autosave runs after a short pause. **Add Selection** appends selected documentation text without executing or modifying it.
+
+**All Notes** searches page title, docset, relative path, and content. Export actions never overwrite a file without confirmation. PDF exports contain selectable/searchable text rather than screenshots.
+
+## Web Playground
+
+The Web Playground bundles CodeMirror locally and requires no network, Node.js, or npm at runtime. Its internal preview blocks external `http`, `https`, `ftp`, `ws`, and `wss` requests.
+
+The preview is defense-in-depth, not a perfect security sandbox. Run only code you understand. User-created preview content is not recolored by ZealRN's appearance setting. **Open in Browser** runs outside the internal preview restrictions.
+
+## Build
+
+Required dependencies include CMake, Ninja, Qt 6.4.2 or later with Widgets, Svg, WebEngine, WebChannel, SQL SQLite, and Print Support, plus libarchive, SQLite, XCB keysyms, and xkbcommon on X11.
+
+```bash
+cmake --preset release -D CMAKE_MAKE_PROGRAM=/usr/bin/ninja
+cmake --build --preset release
+
+cmake --preset testing -D CMAKE_MAKE_PROGRAM=/usr/bin/ninja
+cmake --build --preset testing
+ctest --preset testing --output-on-failure
+```
+
+The executable is `build/release/zealrn`.
+
+Build release packages with:
+
+```bash
+./scripts/package-appimage.sh
+./scripts/package-deb.sh
+```
+
+CodeMirror developer assets are reproducible but Node.js is only needed to regenerate them:
+
+```bash
+cd tools/playground
+npm ci
+npm run bundle
+```
+
+Do not commit `node_modules` or generated release artifacts.
+
+## Known Limitations
+
+- This is an alpha release with one main note per documentation page.
+- Notes are local only; there are no accounts, sync, sharing, or cloud services.
+- AppImage targets a normal x86_64 Linux desktop and expects baseline system libraries such as glibc and XCB.
+- The packaged terminal uses the external-terminal fallback because QTermWidget was unavailable in the validation build.
+- On Qt 6.4-6.6, changing appearance may require restarting ZealRN before downloaded documentation pages change theme.
+- Windows embedded ConPTY and Windows packaging remain future work.
+
+## License And Attribution
+
+ZealRN is licensed under the GNU General Public License version 3 or later. See [COPYING](COPYING).
+
+ZealRN is a fork of Zeal and retains upstream copyright and attribution. Docsets are provided through the Zeal/Dash ecosystem. Bundled third-party license notices are in [LICENSES](LICENSES) and [tools/playground/THIRD_PARTY_LICENSES.md](tools/playground/THIRD_PARTY_LICENSES.md).
