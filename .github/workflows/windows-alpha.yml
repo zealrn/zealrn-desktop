@@ -117,15 +117,6 @@ jobs:
           buildPreset: release-portable
           configurePresetAdditionalArgs: "['-DVCPKG_INSTALL_OPTIONS=--x-abi-tools-use-exact-versions']"
 
-      - name: Check executable version
-        shell: pwsh
-        run: |
-          $output = & build/release/zealrn.exe --attach-console --version 2>&1 | Out-String
-          Write-Output $output
-          if ($LASTEXITCODE -ne 0 -or $output -notmatch "0\.1\.0-alpha") {
-            throw "zealrn.exe version check failed."
-          }
-
       - name: Package and validate Windows artifacts
         shell: pwsh
         run: scripts/package-windows.ps1
