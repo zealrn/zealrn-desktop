@@ -2,6 +2,8 @@ name: Windows Alpha
 
 on:
   workflow_dispatch:
+  push:
+    branches: [feature/windows-alpha-release]
   pull_request:
     branches: [main]
     paths:
