@@ -6,6 +6,9 @@
 #include <QFileInfo>
 #include <QVBoxLayout>
 #include <QWebEngineProfile>
+#if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
+#include <QWebEnginePermission>
+#endif
 #include <QWebEngineSettings>
 #include <QWebEngineUrlRequestInfo>
 #include <QWebEngineView>
@@ -35,12 +38,18 @@ void WebPlaygroundRequestInterceptor::interceptRequest(QWebEngineUrlRequestInfo 
 WebPlaygroundPage::WebPlaygroundPage(QWebEngineProfile *profile, QObject *parent)
     : QWebEnginePage(profile, parent)
 {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
+    connect(this, &QWebEnginePage::permissionRequested, this, [](QWebEnginePermission permission) {
+        permission.deny();
+    });
+#else
     connect(this,
             &QWebEnginePage::featurePermissionRequested,
             this,
             [this](const QUrl &origin, QWebEnginePage::Feature feature) {
         setFeaturePermission(origin, feature, QWebEnginePage::PermissionDeniedByUser);
     });
+#endif
 }
 
 bool WebPlaygroundPage::acceptNavigationRequest(const QUrl &url, NavigationType, bool)
