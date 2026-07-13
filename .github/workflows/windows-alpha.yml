@@ -108,15 +108,6 @@ jobs:
           $vcpkgDebugBin = Join-Path $env:GITHUB_WORKSPACE "build/vcpkg_installed/x64-windows/debug/bin"
           $env:PATH = "$vcpkgDebugBin;$vcpkgBin;$env:PATH"
           New-Item $env:APPDATA, $env:LOCALAPPDATA -ItemType Directory -Force | Out-Null
-          dumpbin /dependents build/testing/src/libs/ui/tests/learningnotesexporter_test.exe
-          $exporterLog = Join-Path $env:RUNNER_TEMP "learningnotesexporter-test.txt"
-          & build/testing/src/libs/ui/tests/learningnotesexporter_test.exe -o "$exporterLog,txt"
-          $exporterExit = $LASTEXITCODE
-          if (Test-Path $exporterLog) { Get-Content $exporterLog }
-          if ($exporterExit -ne 0) {
-            $unsignedExit = [uint32]($exporterExit -band 0xffffffffL)
-            throw ("learningnotesexporter_test failed with exit code 0x{0:X8}." -f $unsignedExit)
-          }
           ctest --preset testing --output-on-failure
 
       - name: Configure and build portable release

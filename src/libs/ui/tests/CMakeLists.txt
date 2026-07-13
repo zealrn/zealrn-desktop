@@ -23,7 +23,9 @@ add_executable(learningnotesexporter_test learningnotesexporter_test.cpp)
 target_link_libraries(learningnotesexporter_test PRIVATE Ui LibArchive::LibArchive Qt6::PrintSupport Qt6::Sql Qt6::Test)
 
 zeal_add_test(learningnotesexporter_test)
-set_tests_properties(learningnotesexporter_test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+if(NOT WIN32)
+    set_tests_properties(learningnotesexporter_test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endif()
 
 add_executable(docsetmetadata_test docsetmetadata_test.cpp)
 target_link_libraries(docsetmetadata_test PRIVATE Registry Qt6::Gui Qt6::Test)
