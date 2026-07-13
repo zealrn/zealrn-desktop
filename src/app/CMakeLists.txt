@@ -60,7 +60,6 @@ qt_deploy_runtime_dependencies(
     EXECUTABLE \"$<TARGET_FILE:App>\"
     BIN_DIR .
     NO_TRANSLATIONS
-    NO_COMPILER_RUNTIME
     DEPLOY_TOOL_OPTIONS --skip-plugin-types qmltooling,position,generic --no-quick-import
 )")
 
@@ -88,8 +87,13 @@ if(APPLE)
 elseif(WIN32)
     install(TARGETS App RUNTIME DESTINATION .)
 
-    # Install the license alongside the binary.
-    install(FILES "${CMAKE_SOURCE_DIR}/COPYING" DESTINATION .)
+    # Install licenses and attribution alongside the binary.
+    install(FILES
+        "${CMAKE_SOURCE_DIR}/COPYING"
+        "${CMAKE_SOURCE_DIR}/README.md"
+        "${CMAKE_SOURCE_DIR}/tools/playground/THIRD_PARTY_LICENSES.md"
+        DESTINATION .
+    )
 
     if(_use_qt_cmake_commands)
         # Install Qt runtime dependencies.

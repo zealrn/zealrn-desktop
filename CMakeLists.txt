@@ -58,7 +58,7 @@ if(ZEAL_USE_COMPILER_CACHE)
 endif()
 
 # Project information.
-set(PROJECT_COMPANY_NAME "Oleg Shparber")
+set(PROJECT_COMPANY_NAME "abnzrdev")
 set(PROJECT_COPYRIGHT "© 2013-2026 Oleg Shparber and other contributors")
 
 # Determine version suffix for non-release builds.
