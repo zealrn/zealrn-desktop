@@ -18,8 +18,8 @@ $required = @(
     "Qt6WebEngineCore.dll",
     "Qt6WebEngineWidgets.dll",
     "QtWebEngineProcess.exe",
-    "platforms/qwindows.dll",
-    "sqldrivers/qsqlite.dll",
+    "plugins/platforms/qwindows.dll",
+    "plugins/sqldrivers/qsqlite.dll",
     "resources/qtwebengine_resources.pak",
     "COPYING",
     "THIRD_PARTY_LICENSES.md"
