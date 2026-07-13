@@ -46,7 +46,30 @@ if [[ ! -f "${installed_appimage}" ]] || ! cmp -s "${appimage}" "${installed_app
     install -m 0755 "${appimage}" "${installed_appimage}"
 fi
 
-ln -sfn "${installed_appimage}" "${launcher}"
+if [[ -e "${launcher}" || -L "${launcher}" ]]; then
+    rm -f "${launcher}"
+fi
+cat > "${launcher}" <<EOF
+#!/usr/bin/env bash
+# ZealRN user-local launcher
+set -uo pipefail
+
+appimage="${installed_appimage}"
+error_log="\$(mktemp)"
+trap 'rm -f "\${error_log}"' EXIT
+
+"\${appimage}" "\$@" 2>"\${error_log}"
+status=\$?
+if [[ \${status} -ne 0 ]] && grep -Eqi 'could not (find|load) the Qt platform plugin|no Qt platform plugin could be initialized|wayland.*platform plugin' "\${error_log}"; then
+    QT_QPA_PLATFORM=xcb "\${appimage}" "\$@"
+    exit \$?
+fi
+if [[ -s "\${error_log}" && -t 2 ]]; then
+    cat "\${error_log}" >&2
+fi
+exit \${status}
+EOF
+chmod 0755 "${launcher}"
 install -m 0644 "${repo_dir}/assets/freedesktop/sc-apps-zeal.svg" "${icon_file}"
 
 escaped_launcher="${launcher//\\/\\\\}"

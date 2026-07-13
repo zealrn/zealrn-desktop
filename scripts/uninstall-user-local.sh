@@ -8,6 +8,8 @@ icon_file="${HOME}/.local/share/icons/hicolor/scalable/apps/zealrn.svg"
 
 if [[ -L "${launcher}" ]] && [[ "$(readlink "${launcher}")" == "${install_dir}/"* ]]; then
     rm "${launcher}"
+elif [[ -f "${launcher}" ]] && grep -q '^# ZealRN user-local launcher$' "${launcher}"; then
+    rm "${launcher}"
 fi
 rm -f "${desktop_file}" "${icon_file}"
 rm -rf "${install_dir}"
