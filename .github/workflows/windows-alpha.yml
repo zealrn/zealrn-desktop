@@ -1,0 +1,151 @@
+name: Windows Alpha
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/windows-alpha.yml"
+      - "CMakeLists.txt"
+      - "CMakePresets.json"
+      - "cmake/**"
+      - "pkg/windows/**"
+      - "scripts/package-windows.ps1"
+      - "scripts/validate-windows-package.ps1"
+      - "src/**"
+      - "vcpkg.json"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  QT_VERSION: "6.11.1"
+  QT_MODULES: >-
+    qtpositioning
+    qtwebchannel
+    qtwebengine
+  VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}/.vcpkg-cache,readwrite
+
+jobs:
+  windows-x64:
+    name: Windows 2022 x64
+    runs-on: windows-2022
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Configure MSVC 2022
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Record toolchain
+        id: toolchain
+        shell: pwsh
+        run: |
+          $compiler = & cl 2>&1 | Select-Object -First 1
+          Write-Output $compiler
+          "compiler=$compiler" >> $env:GITHUB_OUTPUT
+          cmake --version
+          ninja --version
+
+      - name: Restore vcpkg binary cache
+        uses: actions/cache@v6
+        with:
+          path: ${{ github.workspace }}/.vcpkg-cache
+          key: windows-x64-vcpkg-${{ hashFiles('vcpkg.json') }}-${{ steps.toolchain.outputs.compiler }}
+          restore-keys: windows-x64-vcpkg-${{ hashFiles('vcpkg.json') }}-
+
+      - name: Prepare vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgDirectory: ${{ github.workspace }}/.vcpkg
+
+      - name: Install Qt
+        uses: trollixx/setup-qt@v1
+        with:
+          version: ${{ env.QT_VERSION }}
+          modules: ${{ env.QT_MODULES }}
+
+      - name: Ensure NSIS is available
+        shell: pwsh
+        run: |
+          if (-not (Get-Command makensis.exe -ErrorAction SilentlyContinue)) {
+            choco install nsis --no-progress -y
+          }
+          makensis.exe /VERSION
+
+      - name: Configure and build release
+        uses: lukka/run-cmake@v10
+        with:
+          configurePreset: release
+          buildPreset: release
+          configurePresetAdditionalArgs: "['-DVCPKG_INSTALL_OPTIONS=--x-abi-tools-use-exact-versions']"
+
+      - name: Configure and build tests
+        uses: lukka/run-cmake@v10
+        with:
+          configurePreset: testing
+          buildPreset: testing
+          configurePresetAdditionalArgs: "['-DVCPKG_INSTALL_OPTIONS=--x-abi-tools-use-exact-versions']"
+
+      - name: Run tests with clean user data
+        shell: pwsh
+        run: |
+          $env:APPDATA = Join-Path $env:RUNNER_TEMP "zealrn-test/roaming"
+          $env:LOCALAPPDATA = Join-Path $env:RUNNER_TEMP "zealrn-test/local"
+          New-Item $env:APPDATA, $env:LOCALAPPDATA -ItemType Directory -Force | Out-Null
+          ctest --preset testing --output-on-failure
+
+      - name: Configure and build portable release
+        uses: lukka/run-cmake@v10
+        with:
+          configurePreset: release-portable
+          buildPreset: release-portable
+          configurePresetAdditionalArgs: "['-DVCPKG_INSTALL_OPTIONS=--x-abi-tools-use-exact-versions']"
+
+      - name: Check executable version
+        shell: pwsh
+        run: |
+          $output = & build/release/zealrn.exe --attach-console --version 2>&1 | Out-String
+          Write-Output $output
+          if ($LASTEXITCODE -ne 0 -or $output -notmatch "0\.1\.0-alpha") {
+            throw "zealrn.exe version check failed."
+          }
+
+      - name: Package and validate Windows artifacts
+        shell: pwsh
+        run: scripts/package-windows.ps1
+
+      - name: Show executable dependencies
+        shell: pwsh
+        run: dumpbin /dependents build/windows-package/installer/zealrn.exe
+
+      - name: Verify artifact checksums
+        shell: pwsh
+        working-directory: dist/windows
+        run: |
+          Get-Content SHA256SUMS | ForEach-Object {
+            if ($_ -notmatch '^([0-9a-f]{64}) \*(.+)$') { throw "Invalid checksum line: $_" }
+            $actual = (Get-FileHash $Matches[2] -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($actual -ne $Matches[1]) { throw "Checksum mismatch: $($Matches[2])" }
+          }
+
+      - name: Upload Windows alpha artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: zealrn-windows-alpha
+          path: |
+            dist/windows/ZealRN-0.1.0-alpha-win64-portable.zip
+            dist/windows/ZealRN-0.1.0-alpha-win64-setup.exe
+            dist/windows/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 14
