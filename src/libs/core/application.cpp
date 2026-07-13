@@ -26,12 +26,6 @@
 
 namespace Zeal::Core {
 
-namespace {
-using Qt::Literals::StringLiterals::operator""_L1;
-
-constexpr auto ReleasesApiUrl = "https://api.zealdocs.org/v1/releases"_L1;
-} // namespace
-
 Application *Application::m_instance = nullptr;
 
 Application::Application(quint16 httpServerPort, QObject *parent)
@@ -161,6 +155,62 @@ QString Application::versionString()
     return v;
 }
 
+QUrl Application::releasesApiUrl()
+{
+    return QUrl(QStringLiteral("https://api.github.com/repos/abnzrdev/zealrn/releases"));
+}
+
+std::optional<QVersionNumber> Application::latestPublishedRelease(const QByteArray &json, QString *error)
+{
+    if (error != nullptr) {
+        error->clear();
+    }
+
+    QJsonParseError jsonError;
+    const QJsonDocument document = QJsonDocument::fromJson(json, &jsonError);
+    if (jsonError.error != QJsonParseError::NoError || !document.isArray()) {
+        if (error != nullptr) {
+            *error = jsonError.error != QJsonParseError::NoError ? jsonError.errorString()
+                                                                  : tr("Server returned an invalid release list.");
+        }
+        return std::nullopt;
+    }
+
+    QVersionNumber latest;
+    for (const QJsonValue &value : document.array()) {
+        if (!value.isObject()) {
+            if (error != nullptr) {
+                *error = tr("Server returned an invalid release list.");
+            }
+            return std::nullopt;
+        }
+
+        const QJsonObject release = value.toObject();
+        if (release.value(QStringLiteral("draft")).toBool()
+            || release.value(QStringLiteral("prerelease")).toBool()) {
+            continue;
+        }
+
+        QString tag = release.value(QStringLiteral("tag_name")).toString();
+        if (tag.startsWith(QLatin1Char('v'), Qt::CaseInsensitive)) {
+            tag.remove(0, 1);
+        }
+        qsizetype suffixIndex = 0;
+        const QVersionNumber version = QVersionNumber::fromString(tag, &suffixIndex);
+        if (version.isNull() || suffixIndex != tag.size()) {
+            if (error != nullptr) {
+                *error = tr("Server returned an invalid release list.");
+            }
+            return std::nullopt;
+        }
+        if (latest.isNull() || version > latest) {
+            latest = version;
+        }
+    }
+
+    return latest.isNull() ? std::nullopt : std::optional<QVersionNumber>(latest);
+}
+
 QNetworkReply *Application::download(const QUrl &url)
 {
     static const QString ua = userAgent();
@@ -179,12 +229,12 @@ QNetworkReply *Application::download(const QUrl &url)
 /*!
   \internal
 
-  Performs a check whether a new Zeal version is available. Setting \a quiet to true suppresses
+  Performs a check whether a new ZealRN version is available. Setting \a quiet to true suppresses
   error and "you are using the latest version" message boxes.
 */
 void Application::checkForUpdates(bool quiet)
 {
-    const QNetworkReply *reply = download(QUrl(ReleasesApiUrl));
+    const QNetworkReply *reply = download(releasesApiUrl());
     connect(reply, &QNetworkReply::finished, this, [this, quiet]() {
         const QScopedPointer<QNetworkReply, QScopedPointerDeleteLater> reply(qobject_cast<QNetworkReply *>(sender()));
 
@@ -195,35 +245,24 @@ void Application::checkForUpdates(bool quiet)
             return;
         }
 
-        QJsonParseError jsonError;
-        const QJsonDocument jsonDoc = QJsonDocument::fromJson(reply->readAll(), &jsonError);
-
-        if (jsonError.error != QJsonParseError::NoError) {
+        QString error;
+        const auto latestVersion = latestPublishedRelease(reply->readAll(), &error);
+        if (!error.isEmpty()) {
             if (!quiet) {
-                emit updateCheckError(jsonError.errorString());
+                emit updateCheckError(error);
             }
             return;
         }
 
-        const QJsonArray releases = jsonDoc.array();
-        if (releases.isEmpty() || !releases.first().isObject()) {
+        if (!latestVersion.has_value()) {
             if (!quiet) {
-                emit updateCheckError(tr("Server returned an invalid release list."));
+                emit updateCheckNoReleases();
             }
             return;
         }
 
-        const QJsonObject versionInfo = releases.first().toObject(); // Latest is the first.
-        const auto latestVersion = QVersionNumber::fromString(versionInfo[QLatin1String("version")].toString());
-        if (latestVersion.isNull()) {
-            if (!quiet) {
-                emit updateCheckError(tr("Server returned an invalid release list."));
-            }
-            return;
-        }
-
-        if (latestVersion > version()) {
-            emit updateCheckDone(latestVersion.toString());
+        if (*latestVersion > version()) {
+            emit updateCheckDone(latestVersion->toString());
         } else if (!quiet) {
             emit updateCheckDone();
         }

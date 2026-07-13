@@ -5,7 +5,10 @@
 #define ZEAL_CORE_APPLICATION_H
 
 #include <QObject>
+#include <QUrl>
 #include <QVersionNumber>
+
+#include <optional>
 
 class QNetworkAccessManager;
 class QNetworkReply;
@@ -48,12 +51,16 @@ public:
     static QString configLocation();
     static QVersionNumber version();
     static QString versionString();
+    static QUrl releasesApiUrl();
+    static std::optional<QVersionNumber> latestPublishedRelease(const QByteArray &json,
+                                                                QString *error = nullptr);
 
     QNetworkReply *download(const QUrl &url);
     void checkForUpdates(bool quiet = false);
 
 signals:
     void updateCheckDone(const QString &version = QString());
+    void updateCheckNoReleases();
     void updateCheckError(const QString &message);
 
 private:
