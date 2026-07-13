@@ -45,9 +45,14 @@ if ($forbidden) {
     throw "Build/source files were included in deployment: $($forbidden[0].FullName)"
 }
 
-$versionOutput = & (Join-Path $rootPath "zealrn.exe") --attach-console --version 2>&1 | Out-String
-if ($LASTEXITCODE -ne 0 -or $versionOutput -notmatch "0\.1\.0-alpha") {
-    throw "Deployed zealrn.exe version check failed: $versionOutput"
+$executable = Join-Path $rootPath "zealrn.exe"
+& $executable --attach-console --version
+if ($LASTEXITCODE -ne 0) {
+    throw "Deployed zealrn.exe --version failed with exit code $LASTEXITCODE."
+}
+$productVersion = (Get-Item $executable).VersionInfo.ProductVersion
+if ($productVersion -notmatch "0\.1\.0-alpha") {
+    throw "Deployed zealrn.exe has unexpected ProductVersion: $productVersion"
 }
 
 Write-Output "Validated Windows deployment: $rootPath"
