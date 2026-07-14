@@ -13,8 +13,8 @@ $distPath = Join-Path $repoRoot $DistDir
 $stageRoot = Join-Path $repoRoot "build/windows-package"
 $installerStage = Join-Path $stageRoot "installer"
 $portableStage = Join-Path $stageRoot "portable"
-$zipPath = Join-Path $distPath "ZealRN-0.1.0-alpha-win64-portable.zip"
-$setupPath = Join-Path $distPath "ZealRN-0.1.0-alpha-win64-setup.exe"
+$zipPath = Join-Path $distPath "ZealRN-0.1.0-win64-portable.zip"
+$setupPath = Join-Path $distPath "ZealRN-0.1.0-win64-setup.exe"
 $checksumsPath = Join-Path $distPath "SHA256SUMS"
 
 function Invoke-Checked {

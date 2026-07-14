@@ -12,12 +12,24 @@ class ApplicationUpdatesTest : public QObject
     Q_OBJECT
 
 private slots:
+    void initTestCase();
+    void currentVersionIsProductionRelease();
     void usesZealrnRepository();
     void usesZealrnReleasePage();
     void emptyListMeansNoPublishedReleases();
     void ignoresDraftsAndPrereleases();
     void rejectsMalformedJson();
 };
+
+void ApplicationUpdatesTest::initTestCase()
+{
+    QCoreApplication::setApplicationVersion(QStringLiteral(ZEAL_VERSION));
+}
+
+void ApplicationUpdatesTest::currentVersionIsProductionRelease()
+{
+    QCOMPARE(Application::versionString(), QStringLiteral("v0.1.0"));
+}
 
 void ApplicationUpdatesTest::usesZealrnRepository()
 {

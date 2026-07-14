@@ -15,7 +15,7 @@
   <url type="homepage">https://github.com/abnzrdev/zealrn</url>
   <url type="vcs-browser">https://github.com/abnzrdev/zealrn</url>
   <releases>
-    <release date="2026-07-13" version="0.1.0-alpha" type="development" />
+    <release date="2026-07-15" version="0.1.0" type="stable" />
   </releases>
   <content_rating type="oars-1.1" />
 </component>

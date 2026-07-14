@@ -12,5 +12,5 @@ cmake --build --preset release
 mkdir -p "${dist_dir}"
 
 (cd "${build_dir}" && cpack -G DEB)
-install -m 0644 "${build_dir}/zealrn_0.1.0-alpha_amd64.deb" "${dist_dir}/zealrn_0.1.0-alpha_amd64.deb"
-echo "Created ${dist_dir}/zealrn_0.1.0-alpha_amd64.deb"
+install -m 0644 "${build_dir}/zealrn_0.1.0_amd64.deb" "${dist_dir}/zealrn_0.1.0_amd64.deb"
+echo "Created ${dist_dir}/zealrn_0.1.0_amd64.deb"

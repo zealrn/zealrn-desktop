@@ -1,9 +1,9 @@
-name: Windows Alpha
+name: Windows Production
 
 on:
   workflow_dispatch:
   push:
-    branches: [feature/windows-alpha-release]
+    branches: [feature/production-onboarding-start-note]
   pull_request:
     branches: [main]
     paths:
@@ -141,13 +141,13 @@ jobs:
             if ($actual -ne $Matches[1]) { throw "Checksum mismatch: $($Matches[2])" }
           }
 
-      - name: Upload Windows alpha artifacts
+      - name: Upload Windows production artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: zealrn-windows-alpha
+          name: zealrn-windows-0.1.0
           path: |
-            dist/windows/ZealRN-0.1.0-alpha-win64-portable.zip
-            dist/windows/ZealRN-0.1.0-alpha-win64-setup.exe
+            dist/windows/ZealRN-0.1.0-win64-portable.zip
+            dist/windows/ZealRN-0.1.0-win64-setup.exe
             dist/windows/SHA256SUMS
           if-no-files-found: error
           retention-days: 14

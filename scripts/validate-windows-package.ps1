@@ -52,7 +52,7 @@ if ($LASTEXITCODE -ne 0) {
     throw "Deployed zealrn.exe --version failed with exit code $LASTEXITCODE."
 }
 $productVersion = (Get-Item $executable).VersionInfo.ProductVersion
-if ($productVersion -notmatch "0\.1\.0-alpha") {
+if ($productVersion -notmatch "^0\.1\.0(?:\.0)?$") {
     throw "Deployed zealrn.exe has unexpected ProductVersion: $productVersion"
 }
 

@@ -40,7 +40,7 @@ printf '%s\n' 'export QTWEBENGINE_DISABLE_SANDBOX=1' > "${appdir}/apprun-hooks/q
 export APPIMAGE_EXTRACT_AND_RUN=1
 export QMAKE="$(command -v qmake6)"
 export EXTRA_QT_PLUGINS="sqldrivers"
-output="${dist_dir}/ZealRN-0.1.0-alpha-x86_64.AppImage"
+output="${dist_dir}/ZealRN-0.1.0-x86_64.AppImage"
 export LDAI_OUTPUT="${output}"
 export PATH="${tools_dir}:${PATH}"
 "${tools_dir}/linuxdeploy-x86_64.AppImage" \

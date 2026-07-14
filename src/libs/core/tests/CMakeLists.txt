@@ -22,6 +22,7 @@ target_link_libraries(extractor_test PRIVATE LibArchive::LibArchive)
 zeal_add_test(extractor_test)
 
 add_executable(applicationupdates_test applicationupdates_test.cpp)
+target_compile_definitions(applicationupdates_test PRIVATE ZEAL_VERSION="${ZEAL_VERSION_FULL}")
 target_link_libraries(applicationupdates_test PRIVATE Core Qt6::Test)
 
 zeal_add_test(applicationupdates_test)

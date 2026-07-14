@@ -24,10 +24,10 @@ SetCompressor /SOLID lzma
 
 VIProductVersion "0.1.0.0"
 VIAddVersionKey "ProductName" "ZealRN"
-VIAddVersionKey "ProductVersion" "0.1.0-alpha"
-VIAddVersionKey "FileVersion" "0.1.0-alpha"
+VIAddVersionKey "ProductVersion" "0.1.0"
+VIAddVersionKey "FileVersion" "0.1.0"
 VIAddVersionKey "CompanyName" "abnzrdev"
-VIAddVersionKey "FileDescription" "ZealRN 0.1.0-alpha Setup"
+VIAddVersionKey "FileDescription" "ZealRN 0.1.0 Setup"
 VIAddVersionKey "LegalCopyright" "GPL-3.0-or-later; upstream contributors credited in COPYING"
 
 !define MUI_ABORTWARNING
@@ -55,7 +55,7 @@ Section "ZealRN" MainSection
   WriteUninstaller "$INSTDIR\Uninstall.exe"
   WriteRegStr HKCU "Software\abnzrdev\ZealRN" "InstallDir" "$INSTDIR"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ZealRN" "DisplayName" "ZealRN"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ZealRN" "DisplayVersion" "0.1.0-alpha"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ZealRN" "DisplayVersion" "0.1.0"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ZealRN" "Publisher" "abnzrdev"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ZealRN" "URLInfoAbout" "https://github.com/abnzrdev/zealrn"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ZealRN" "DisplayIcon" "$INSTDIR\zealrn.exe"

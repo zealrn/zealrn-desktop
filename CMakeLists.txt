@@ -76,7 +76,6 @@ else()
     message(NOTICE "Dev build: ${PROJECT_VERSION}${ZEAL_VERSION_SUFFIX}")
 endif()
 
-set(ZEAL_VERSION_SUFFIX "-alpha")
 set(ZEAL_VERSION_FULL "${PROJECT_VERSION}${ZEAL_VERSION_SUFFIX}")
 message(NOTICE "Calculated Zeal version: ${ZEAL_VERSION_FULL}")
 
