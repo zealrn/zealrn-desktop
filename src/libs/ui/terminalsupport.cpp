@@ -174,7 +174,7 @@ int clampTerminalFontSize(int size)
 
 QString windowsCommandLine(const TerminalProfile &profile)
 {
-    QStringList command = {profile.program};
+    QStringList command = {QDir::toNativeSeparators(profile.program)};
     command.append(profile.arguments);
     for (QString &argument : command) {
         argument = quoteWindowsArgument(argument);

@@ -212,6 +212,7 @@ public:
             WaitForSingleObject(watchedProcess, INFINITE);
             DWORD exitCode = 0;
             GetExitCodeProcess(watchedProcess, &exitCode);
+            closePseudoConsole();
             QMetaObject::invokeMethod(
                 this,
                 [this, watchedProcess, exitCode]() {
@@ -243,7 +244,11 @@ public:
 
     void resize(QSize size) override
     {
-        if (!m_pseudoConsole || size.width() <= 0 || size.height() <= 0) {
+        if (size.width() <= 0 || size.height() <= 0) {
+            return;
+        }
+        std::lock_guard lock(m_pseudoConsoleMutex);
+        if (!m_pseudoConsole) {
             return;
         }
         const HRESULT result = m_api.resize(m_pseudoConsole, terminalSize(size));
@@ -338,7 +343,6 @@ private:
             m_reader.join();
         }
         closeIoHandles();
-        closePseudoConsole();
         std::lock_guard lock(m_writeMutex);
         m_pendingInput.clear();
     }
@@ -351,9 +355,13 @@ private:
 
     void closePseudoConsole()
     {
-        if (m_pseudoConsole) {
-            m_api.close(m_pseudoConsole);
-            m_pseudoConsole = nullptr;
+        HPCON pseudoConsole = nullptr;
+        {
+            std::lock_guard lock(m_pseudoConsoleMutex);
+            pseudoConsole = std::exchange(m_pseudoConsole, nullptr);
+        }
+        if (pseudoConsole) {
+            m_api.close(pseudoConsole);
         }
     }
 
@@ -372,10 +380,11 @@ private:
 
     void finish(int exitCode, bool notify)
     {
-        stopIoThreads();
         if (m_processWatcher.joinable()) {
             m_processWatcher.join();
         }
+        closePseudoConsole();
+        stopIoThreads();
         closeHandle(m_process);
         closeHandle(m_job);
         if (notify) {
@@ -385,6 +394,7 @@ private:
 
     ConPtyApi m_api;
     HPCON m_pseudoConsole = nullptr;
+    std::mutex m_pseudoConsoleMutex;
     HANDLE m_inputWrite = nullptr;
     HANDLE m_outputRead = nullptr;
     HANDLE m_process = nullptr;
