@@ -92,6 +92,7 @@ elseif(WIN32)
         "${CMAKE_SOURCE_DIR}/COPYING"
         "${CMAKE_SOURCE_DIR}/README.md"
         "${CMAKE_SOURCE_DIR}/tools/playground/THIRD_PARTY_LICENSES.md"
+        "${CMAKE_SOURCE_DIR}/tools/terminal-frontend/THIRD_PARTY_LICENSES.md"
         DESTINATION .
     )
 
@@ -108,6 +109,8 @@ elseif(UNIX)
     install(FILES "${CMAKE_SOURCE_DIR}/COPYING"
             DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/doc/zealrn")
     install(FILES "${CMAKE_SOURCE_DIR}/tools/playground/THIRD_PARTY_LICENSES.md"
+            DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/doc/zealrn")
+    install(FILES "${CMAKE_SOURCE_DIR}/tools/terminal-frontend/THIRD_PARTY_LICENSES.md"
             DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/doc/zealrn")
 endif()
 

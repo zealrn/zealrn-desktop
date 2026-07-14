@@ -1,0 +1,16 @@
+{
+  "name": "zealrn-terminal-assets",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "bundle": "esbuild src/terminal.js --bundle --minify --format=iife --target=chrome102 --outfile=../../src/app/resources/terminal/terminal.bundle.js"
+  },
+  "dependencies": {
+    "@xterm/addon-fit": "0.11.0",
+    "@xterm/addon-search": "0.16.0",
+    "@xterm/xterm": "6.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.1"
+  }
+}

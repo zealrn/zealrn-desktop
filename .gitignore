@@ -53,3 +53,4 @@ dist/
 
 # Developer-only playground asset dependencies
 tools/playground/node_modules/
+tools/terminal-frontend/node_modules/
