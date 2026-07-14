@@ -112,7 +112,11 @@ void DeveloperTerminalTest::backendFactory_matchesBuildConfiguration()
 {
     const auto backend = Zeal::WidgetUi::createTerminalBackend();
     QVERIFY(backend);
+#ifdef ZEALRN_HAVE_POSIX_PTY
+    QVERIFY(backend->isAvailable());
+#else
     QVERIFY(!backend->isAvailable());
+#endif
     QVERIFY(!backend->isRunning());
     QVERIFY(!backend->start({}, QStringLiteral("/missing"), QSize(80, 24)));
 }

@@ -8,6 +8,13 @@ target_link_libraries(developerterminal_test PRIVATE Ui Core Qt6::Test Qt6::Widg
 
 zeal_add_test(developerterminal_test)
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    add_executable(posixptybackend_test posixptybackend_test.cpp)
+    target_link_libraries(posixptybackend_test PRIVATE Ui Core Qt6::Test)
+    zeal_add_test(posixptybackend_test)
+    set_tests_properties(posixptybackend_test PROPERTIES TIMEOUT 15)
+endif()
+
 add_executable(learningnotesstore_test learningnotesstore_test.cpp)
 target_link_libraries(learningnotesstore_test PRIVATE Ui Qt6::Sql Qt6::Test)
 
