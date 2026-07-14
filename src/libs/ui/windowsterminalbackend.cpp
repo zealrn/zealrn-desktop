@@ -274,7 +274,7 @@ private:
         m_reader = std::thread([this, output]() {
             char buffer[16384];
             DWORD count = 0;
-            while (!m_stopIo && ReadFile(output, buffer, sizeof(buffer), &count, nullptr)) {
+            while (ReadFile(output, buffer, sizeof(buffer), &count, nullptr)) {
                 if (count == 0) {
                     continue;
                 }
@@ -314,14 +314,18 @@ private:
     {
         m_stopIo = true;
         m_writeReady.notify_all();
-        if (m_reader.joinable()) {
-            CancelSynchronousIo(m_reader.native_handle());
-        }
         if (m_writer.joinable()) {
             CancelSynchronousIo(m_writer.native_handle());
         }
-        closeIoHandles();
+        closeHandle(m_inputWrite);
+
+        // ClosePseudoConsole can wait for pending output on Windows versions
+        // before 24H2, so keep the reader draining until the pseudoconsole exits.
         closePseudoConsole();
+        if (m_reader.joinable()) {
+            CancelSynchronousIo(m_reader.native_handle());
+        }
+        closeHandle(m_outputRead);
         if (m_reader.joinable()) {
             m_reader.join();
         }
