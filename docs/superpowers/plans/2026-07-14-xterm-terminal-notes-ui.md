@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship one embedded xterm.js terminal backed by Linux PTY or Windows ConPTY and a larger Markdown-focused Learning Notes editor without changing existing note data.
+**Goal:** Ship an embedded xterm.js terminal backed by Linux PTY, retain external-terminal integration on Windows, and provide a larger Markdown-focused Learning Notes editor without changing existing note data.
 
 **Architecture:** A local, isolated `TerminalView` and minimal `TerminalBridge` render bytes from one platform-selected `TerminalBackend`. Learning Notes remains a native Qt widget over the current store, with presentation-only settings and temporary MainWindow layout modes.
 
-**Tech Stack:** C++20, Qt 6.4.2+ Widgets/WebEngine/WebChannel/Sql/PrintSupport/Test, xterm.js 6.0.0, esbuild 0.28.1, POSIX PTY, Windows ConPTY, CMake/Ninja, GitHub Actions.
+**Tech Stack:** C++20, Qt 6.4.2+ Widgets/WebEngine/WebChannel/Sql/PrintSupport/Test, xterm.js 6.0.0, esbuild 0.28.1, POSIX PTY, CMake/Ninja, GitHub Actions.
 
 ## Global Constraints
 
@@ -103,22 +103,21 @@
 - [ ] Connect status, exit code, copy/paste, resize, appearance, and `Ctrl+`` without recreating sessions.
 - [ ] Run terminal/settings tests and an Xvfb startup smoke test; commit `feat: integrate embedded developer terminal`.
 
-### Task 5: Windows ConPTY and Git Bash
+### Task 5: Windows External Terminal Fallback
 
 **Files:**
-- Replace: `src/libs/ui/windowsterminalbackend.cpp`
 - Modify: `src/libs/ui/terminalsupport.cpp`
 - Modify: `src/libs/ui/tests/developerterminal_test.cpp`
 - Modify: `src/libs/ui/CMakeLists.txt`
 - Modify: `.github/workflows/windows-alpha.yml`
 
 **Interfaces:**
-- Produces native ConPTY implementation of the shared raw backend and Git Bash profiles using direct `bash.exe --login -i`.
+- Produces Windows shell discovery and safe external-terminal launch specifications without an embedded backend.
 
-- [ ] Add Windows-only tests for PowerShell/cmd/Git Bash discovery, ConPTY echo/Unicode/resize/exit, and cleanup.
-- [ ] Implement RAII handles, pipes, pseudoconsole, attribute list, process/job object, reader/writer workers, resize, interrupt, and teardown.
-- [ ] Add PATH, registry, Program Files, Program Files (x86), and LocalAppData Git Bash discovery; reject mintty/git-bash for embedding.
-- [ ] Extend Windows CI with timeout-bounded terminal tests and deployed resource checks; commit `feat: add windows conpty terminal backend`.
+- [x] Keep PowerShell/cmd/Git Bash profile discovery and argument-safe external launching.
+- [x] Select the unavailable embedded backend on Windows while keeping the terminal panel and external action functional.
+- [x] Remove the unreliable ConPTY implementation and its process tests after repeated CI failures.
+- [ ] Run Windows shell/fallback tests and package validation on `windows-2022`.
 
 ### Task 6: Markdown Editing Helpers and Zoom
 
@@ -190,7 +189,7 @@
 
 ## Plan Self-Review
 
-- Every design requirement maps to a task; unsupported-platform fallback and terminal-off builds remain covered.
+- The user-approved Windows fallback replaces the original ConPTY requirement after repeated CI failures; unsupported-platform and terminal-off builds remain covered.
 - QTermWidget removal happens before platform implementations, so no stale dual architecture remains.
 - Notes data compatibility is validated before and after runtime tests; no schema migration is planned.
 - Platform-specific headers stay in platform source files.

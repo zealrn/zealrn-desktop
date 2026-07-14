@@ -2,7 +2,7 @@
 
 ## Scope
 
-This change replaces the optional QTermWidget path with one bundled xterm.js renderer backed by native pseudoterminals on Linux and Windows. It also enlarges and improves the existing page-linked Markdown note editor without changing note identity, the SQLite schema, autosave semantics, or exports.
+This change replaces the optional QTermWidget path with a bundled xterm.js renderer backed by a native Linux pseudoterminal. It also enlarges and improves the existing page-linked Markdown note editor without changing note identity, the SQLite schema, autosave semantics, or exports. Windows retains the existing external-terminal integration.
 
 The existing documentation view, bottom Development Tools dock, Web Playground, All Notes dialog, appearance modes, docset catalog, and release identity remain intact. There is one terminal session, no remote transport, no runtime Node.js, and no rich-text note storage.
 
@@ -14,7 +14,7 @@ The existing documentation view, bottom Development Tools dock, Web Playground, 
 
 `TerminalBridge` is the only object exposed to JavaScript. Frontend input and backend output are Base64 strings so UTF-8 fragments and terminal control bytes survive transport unchanged. Backend output is accumulated for at most one event-loop slice, emitted in bounded batches, queued until xterm reports readiness, and capped to prevent an unbounded hidden-panel backlog. JavaScript calls are asynchronous; C++ never waits for `runJavaScript`.
 
-`TerminalBackend` no longer owns a widget. Its interface is raw terminal operations: start, write, resize, interrupt, terminate, running state, and output/start/exit/error signals. CMake selects `PosixPtyBackend` on Unix, `WindowsConPtyBackend` on Windows, and `UnavailableBackend` elsewhere or when `ZEALRN_ENABLE_TERMINAL=OFF`.
+`TerminalBackend` no longer owns a widget. Its interface is raw terminal operations: start, write, resize, interrupt, terminate, running state, and output/start/exit/error signals. CMake selects `PosixPtyBackend` on Linux and `UnavailableBackend` on Windows, unsupported platforms, or when `ZEALRN_ENABLE_TERMINAL=OFF`.
 
 ## xterm.js Frontend
 
@@ -33,11 +33,9 @@ The generated JavaScript and CSS are committed under `src/app/resources/terminal
 
 Termination targets the PTY child process group with escalating HUP, TERM, then KILL only if needed. EOF and exit status are reported once, file descriptors are closed once, and destruction cannot leave a zombie. No sudo or automatic command is run.
 
-## Windows ConPTY
+## Windows Terminal Integration
 
-`WindowsConPtyBackend` uses `CreatePipe`, `CreatePseudoConsole`, `STARTUPINFOEX` with `PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE`, and `CreateProcessW`. `ResizePseudoConsole` handles dimensions. Synchronous ConPTY pipe I/O runs on owned worker threads and returns data to Qt through queued signals. A Windows Job object with kill-on-close contains the process tree. All process, thread, pipe, attribute-list, pseudoconsole, event, and job handles have single-owner cleanup.
-
-Shell profiles prefer the saved valid executable, then PowerShell 7, Windows PowerShell, Command Prompt, and Git for Windows Bash. Git Bash discovery checks PATH, registry install paths, Program Files, Program Files (x86), and LocalAppData, and launches `bash.exe --login -i` directly. `mintty.exe` and `git-bash.exe` are external-terminal choices only.
+Repeated Windows CI validation showed that the alpha ConPTY backend could not reliably complete input, exit, and teardown across runner environments. It is excluded rather than shipping an unreliable process host. Windows builds retain shell discovery and explicit external launching for Windows Terminal, PowerShell 7, Windows PowerShell, Command Prompt, and Git for Windows Bash. No command is started automatically.
 
 ## Terminal UX and State
 
@@ -78,9 +76,9 @@ No database migration is needed. Before runtime tests, the current `learning-not
 
 ## Testing and Packaging
 
-Focused Qt tests cover the bridge codec/batching, shell discovery, PTY lifecycle, formatting helpers, zoom bounds, preview safety, find/count behavior, and splitter restoration. Windows tests exercise ConPTY echo/resize/exit and shell detection on `windows-2022`. Every process test has a timeout.
+Focused Qt tests cover the bridge codec/batching, shell discovery, Linux PTY lifecycle, formatting helpers, zoom bounds, preview safety, find/count behavior, and splitter restoration. Windows tests cover shell detection, external-launch construction, and the unavailable-backend fallback on `windows-2022`. Every process test has a timeout.
 
-The Linux AppImage and Debian package include xterm resources and no QTermWidget or Node runtime. Windows deployment includes the same Qt resources and ConPTY backend. Generated package artifacts remain ignored. Only the feature branch may be pushed to `origin` for Windows CI; upstream, releases, and tags are untouched.
+The Linux AppImage and Debian package include xterm resources and no QTermWidget or Node runtime. Windows deployment does not include ConPTY code. Generated package artifacts remain ignored. Only the feature branch may be pushed to `origin` for Windows CI; upstream, releases, and tags are untouched.
 
 ## Self-Review
 

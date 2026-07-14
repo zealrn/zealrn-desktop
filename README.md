@@ -16,7 +16,7 @@ It is based on [Zeal](https://github.com/zealdocs/zeal) and keeps Zeal's fast of
 - Back up the local SQLite notes database.
 - Experiment with HTML, CSS, and JavaScript in an isolated, network-blocked preview.
 - Use System, Light, or Dark appearance.
-- Use an embedded developer terminal powered by bundled xterm.js with a native Linux PTY or Windows ConPTY backend.
+- Use an embedded developer terminal powered by bundled xterm.js and a native Linux PTY. Windows uses safe external-terminal launching.
 
 ## Install
 
@@ -122,7 +122,7 @@ Do not commit `node_modules` or generated release artifacts.
 - This is an alpha release with one main note per documentation page.
 - Notes are local only; there are no accounts, sync, sharing, or cloud services.
 - AppImage targets a normal x86_64 Linux desktop and expects baseline system libraries such as glibc and XCB.
-- The embedded terminal has normal user-shell access and is not sandboxed. Use the external-terminal action when a native backend is unavailable.
+- The embedded Linux terminal has normal user-shell access and is not sandboxed. Windows builds launch an external terminal because the alpha does not include an embedded ConPTY backend.
 - On Qt 6.4-6.6, changing appearance may require restarting ZealRN before downloaded documentation pages change theme.
 - Windows packages are unsigned alpha builds; SmartScreen may warn until code signing is configured.
 

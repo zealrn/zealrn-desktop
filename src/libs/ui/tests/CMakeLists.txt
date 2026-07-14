@@ -19,24 +19,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set_tests_properties(posixptybackend_test PROPERTIES TIMEOUT 15)
 endif()
 
-if(WIN32)
-    add_executable(windowsterminalbackend_test windowsterminalbackend_test.cpp)
-    target_link_libraries(windowsterminalbackend_test PRIVATE Ui Core Qt6::Test)
-    foreach(test_case IN ITEMS
-            runsCmdWithWorkingDirectoryAndExitCode
-            resizesAndInterruptsCmd
-            preservesPowerShellUnicode
-            destructionTerminatesProcessTree
-            destructionWithPendingOutputDoesNotDeadlock)
-        set(test_name "windowsterminalbackend_${test_case}")
-        add_test(NAME ${test_name} COMMAND windowsterminalbackend_test -v2 -o -,txt ${test_case})
-        set_tests_properties(${test_name} PROPERTIES
-            TIMEOUT 15
-            ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:$<TARGET_FILE_DIR:Qt6::Core>"
-        )
-    endforeach()
-endif()
-
 add_executable(learningnotesstore_test learningnotesstore_test.cpp)
 target_link_libraries(learningnotesstore_test PRIVATE Ui Qt6::Sql Qt6::Test)
 

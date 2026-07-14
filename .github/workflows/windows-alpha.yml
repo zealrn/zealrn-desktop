@@ -34,8 +34,8 @@ env:
 
 jobs:
   windows-x64:
-    name: Windows 2025 x64
-    runs-on: windows-2025
+    name: Windows 2022 x64
+    runs-on: windows-2022
     timeout-minutes: 120
 
     steps:
