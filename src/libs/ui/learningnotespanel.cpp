@@ -4,25 +4,40 @@
 #include "learningnotespanel.h"
 
 #include "allnotesdialog.h"
+#include "learningnotesmarkdown.h"
 #include "learningnotesstore.h"
+#include "widgets/iconhelper.h"
 
+#include <core/settings.h>
+
+#include <QAction>
 #include <QCoreApplication>
 #include <QDateTime>
+#include <QDesktopServices>
 #include <QDir>
 #include <QFont>
+#include <QFontDatabase>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QGridLayout>
+#include <QHBoxLayout>
 #include <QLabel>
+#include <QLineEdit>
 #include <QMenu>
 #include <QMessageBox>
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QShortcut>
 #include <QStandardPaths>
+#include <QTabWidget>
+#include <QTextBrowser>
+#include <QTextCursor>
+#include <QTextDocument>
 #include <QTimer>
+#include <QToolBar>
 #include <QToolButton>
 #include <QVBoxLayout>
+#include <QVariant>
 
 namespace {
 
@@ -41,6 +56,18 @@ bool confirmOverwrite(QWidget *parent, const QString &path)
                == QMessageBox::Yes;
 }
 
+class MarkdownPreview final : public QTextBrowser
+{
+public:
+    using QTextBrowser::QTextBrowser;
+
+protected:
+    QVariant loadResource(int, const QUrl &) override
+    {
+        return {};
+    }
+};
+
 } // namespace
 
 namespace Zeal::WidgetUi {
@@ -52,9 +79,25 @@ LearningNotesPanel::LearningNotesPanel(QWidget *parent)
     setupUi();
 }
 
+LearningNotesPanel::LearningNotesPanel(Core::Settings *settings, QWidget *parent)
+    : QWidget(parent)
+    , m_store(std::make_unique<LearningNotesStore>())
+    , m_settings(settings)
+{
+    setupUi();
+}
+
 LearningNotesPanel::LearningNotesPanel(const QString &databasePath, QWidget *parent)
     : QWidget(parent)
     , m_store(std::make_unique<LearningNotesStore>(databasePath))
+{
+    setupUi();
+}
+
+LearningNotesPanel::LearningNotesPanel(const QString &databasePath, Core::Settings *settings, QWidget *parent)
+    : QWidget(parent)
+    , m_store(std::make_unique<LearningNotesStore>(databasePath))
+    , m_settings(settings)
 {
     setupUi();
 }
@@ -67,14 +110,36 @@ LearningNotesPanel::~LearningNotesPanel()
 void LearningNotesPanel::setupUi()
 {
     auto *layout = new QVBoxLayout(this);
-    layout->setContentsMargins(12, 12, 12, 12);
-    layout->setSpacing(8);
+    layout->setContentsMargins(10, 10, 10, 10);
+    layout->setSpacing(6);
 
+    auto *titleLayout = new QHBoxLayout();
     auto *title = new QLabel(QCoreApplication::translate("LearningNotesPanel", "Learning Notes"), this);
     QFont titleFont = title->font();
     titleFont.setBold(true);
     title->setFont(titleFont);
-    layout->addWidget(title);
+    titleLayout->addWidget(title);
+    titleLayout->addStretch();
+
+    auto *expandAction = new QAction(tr("Expand Notes"), this);
+    expandAction->setObjectName(QStringLiteral("noteExpandAction"));
+    expandAction->setCheckable(true);
+    expandAction->setToolTip(tr("Give Learning Notes more width"));
+    auto *expandButton = new QToolButton(this);
+    expandButton->setDefaultAction(expandAction);
+    expandButton->setAutoRaise(true);
+    titleLayout->addWidget(expandButton);
+
+    auto *focusAction = new QAction(tr("Focus Notes"), this);
+    m_focusAction = focusAction;
+    focusAction->setObjectName(QStringLiteral("noteFocusAction"));
+    focusAction->setCheckable(true);
+    focusAction->setToolTip(tr("Hide the sidebar and development tools temporarily"));
+    auto *focusButton = new QToolButton(this);
+    focusButton->setDefaultAction(focusAction);
+    focusButton->setAutoRaise(true);
+    titleLayout->addWidget(focusButton);
+    layout->addLayout(titleLayout);
 
     m_docsetLabel = new QLabel(this);
     m_docsetLabel->setWordWrap(true);
@@ -91,13 +156,156 @@ void LearningNotesPanel::setupUi()
 
     m_statusLabel = new QLabel(this);
     m_statusLabel->setObjectName(QStringLiteral("noteStatus"));
-    layout->addWidget(m_statusLabel);
+    m_statusLabel->setToolTip(tr("Notes save automatically after one second."));
+    m_savedAtLabel = new QLabel(this);
+    auto *statusLayout = new QHBoxLayout();
+    statusLayout->addWidget(m_statusLabel);
+    statusLayout->addStretch();
+    statusLayout->addWidget(m_savedAtLabel);
+    layout->addLayout(statusLayout);
+
+    auto *formatBar = new QToolBar(this);
+    formatBar->setObjectName(QStringLiteral("noteFormatBar"));
+    formatBar->setMovable(false);
+    formatBar->setFloatable(false);
+    formatBar->setToolButtonStyle(Qt::ToolButtonTextOnly);
+    const auto addFormatAction = [this, formatBar](const QString &text,
+                                                   const QString &name,
+                                                   const QString &tooltip,
+                                                   LearningNotesMarkdown::Action format) {
+        QAction *action = formatBar->addAction(text);
+        action->setObjectName(name);
+        action->setToolTip(tooltip);
+        connect(action, &QAction::triggered, this, [this, format]() { applyFormat(static_cast<int>(format)); });
+        return action;
+    };
+    addFormatAction(QStringLiteral("H"), QStringLiteral("noteHeadingAction"), tr("Heading"),
+                    LearningNotesMarkdown::Action::Heading);
+    QAction *boldAction = addFormatAction(QStringLiteral("B"), QStringLiteral("noteBoldAction"), tr("Bold"),
+                                          LearningNotesMarkdown::Action::Bold);
+    QFont boldFont = boldAction->font();
+    boldFont.setBold(true);
+    boldAction->setFont(boldFont);
+    QAction *italicAction = addFormatAction(QStringLiteral("I"), QStringLiteral("noteItalicAction"), tr("Italic"),
+                                            LearningNotesMarkdown::Action::Italic);
+    QFont italicFont = italicAction->font();
+    italicFont.setItalic(true);
+    italicAction->setFont(italicFont);
+    addFormatAction(QStringLiteral("-"), QStringLiteral("noteBulletAction"), tr("Bullet list"),
+                    LearningNotesMarkdown::Action::BulletList);
+    addFormatAction(QStringLiteral("1."), QStringLiteral("noteNumberedAction"), tr("Numbered list"),
+                    LearningNotesMarkdown::Action::NumberedList);
+    addFormatAction(QStringLiteral("[ ]"), QStringLiteral("noteTaskAction"), tr("Task checkbox"),
+                    LearningNotesMarkdown::Action::Task);
+    addFormatAction(QStringLiteral(">"), QStringLiteral("noteQuoteAction"), tr("Blockquote"),
+                    LearningNotesMarkdown::Action::Blockquote);
+    addFormatAction(QStringLiteral("`"), QStringLiteral("noteInlineCodeAction"), tr("Inline code"),
+                    LearningNotesMarkdown::Action::InlineCode);
+    addFormatAction(QStringLiteral("```"), QStringLiteral("noteCodeBlockAction"), tr("Code block"),
+                    LearningNotesMarkdown::Action::CodeBlock);
+    addFormatAction(tr("Link"), QStringLiteral("noteLinkAction"), tr("Link"),
+                    LearningNotesMarkdown::Action::Link);
+    addFormatAction(QStringLiteral("---"), QStringLiteral("noteRuleAction"), tr("Horizontal separator"),
+                    LearningNotesMarkdown::Action::HorizontalRule);
+    formatBar->findChild<QAction *>(QStringLiteral("noteNumberedAction"))
+        ->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+7")));
+    formatBar->findChild<QAction *>(QStringLiteral("noteBulletAction"))
+        ->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+8")));
+    formatBar->findChild<QAction *>(QStringLiteral("noteQuoteAction"))
+        ->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+9")));
+    formatBar->addSeparator();
+    QAction *undoAction = formatBar->addAction(
+        IconHelper::fromTheme(QStringLiteral("edit-undo"), QStringLiteral(":/icons/tabler/arrow-back-up.svg")),
+        tr("Undo"));
+    undoAction->setObjectName(QStringLiteral("noteUndoAction"));
+    QAction *redoAction = formatBar->addAction(
+        IconHelper::fromTheme(QStringLiteral("edit-redo"), QStringLiteral(":/icons/tabler/arrow-forward-up.svg")),
+        tr("Redo"));
+    redoAction->setObjectName(QStringLiteral("noteRedoAction"));
+    QAction *lineWrapAction = formatBar->addAction(tr("Wrap"));
+    lineWrapAction->setObjectName(QStringLiteral("noteLineWrapAction"));
+    lineWrapAction->setCheckable(true);
+    lineWrapAction->setChecked(m_settings == nullptr || m_settings->learningNotesLineWrap);
+    layout->addWidget(formatBar);
+
+    auto *findLayout = new QHBoxLayout();
+    auto *findWidget = new QWidget(this);
+    findWidget->setObjectName(QStringLiteral("noteFindBar"));
+    findWidget->setLayout(findLayout);
+    m_findEdit = new QLineEdit(findWidget);
+    m_findEdit->setObjectName(QStringLiteral("noteFindEdit"));
+    m_findEdit->setPlaceholderText(tr("Find in note"));
+    findLayout->addWidget(m_findEdit, 1);
+    QAction *findPreviousAction = new QAction(tr("Previous"), this);
+    findPreviousAction->setObjectName(QStringLiteral("noteFindPreviousAction"));
+    auto *findPreviousButton = new QToolButton(findWidget);
+    findPreviousButton->setDefaultAction(findPreviousAction);
+    findLayout->addWidget(findPreviousButton);
+    QAction *findNextAction = new QAction(tr("Next"), this);
+    findNextAction->setObjectName(QStringLiteral("noteFindNextAction"));
+    auto *findNextButton = new QToolButton(findWidget);
+    findNextButton->setDefaultAction(findNextAction);
+    findLayout->addWidget(findNextButton);
+    auto *closeFindButton = new QToolButton(findWidget);
+    closeFindButton->setText(QStringLiteral("×"));
+    closeFindButton->setToolTip(tr("Close find bar"));
+    findLayout->addWidget(closeFindButton);
+    findWidget->hide();
+    layout->addWidget(findWidget);
 
     m_editor = new QPlainTextEdit(this);
     m_editor->setObjectName(QStringLiteral("noteEditor"));
+    m_editor->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
     m_editor->setPlaceholderText(
         QCoreApplication::translate("LearningNotesPanel", "Write what you learned from this documentation page…"));
-    layout->addWidget(m_editor, 1);
+    m_preview = new MarkdownPreview(this);
+    m_preview->setObjectName(QStringLiteral("notePreview"));
+    m_preview->setOpenLinks(false);
+    m_preview->setOpenExternalLinks(false);
+    m_modeTabs = new QTabWidget(this);
+    m_modeTabs->setObjectName(QStringLiteral("noteModeTabs"));
+    m_modeTabs->addTab(m_editor, tr("Edit"));
+    m_modeTabs->addTab(m_preview, tr("Preview"));
+    layout->addWidget(m_modeTabs, 1);
+
+    auto *detailLayout = new QHBoxLayout();
+    m_countLabel = new QLabel(this);
+    m_countLabel->setObjectName(QStringLiteral("noteCount"));
+    detailLayout->addWidget(m_countLabel);
+    detailLayout->addStretch();
+    QAction *zoomOutAction = new QAction(
+        IconHelper::fromTheme(QStringLiteral("zoom-out"), QStringLiteral(":/icons/tabler/minus.svg")),
+        tr("Zoom Out"),
+        this);
+    zoomOutAction->setObjectName(QStringLiteral("noteZoomOutAction"));
+    auto *zoomOutButton = new QToolButton(this);
+    zoomOutButton->setDefaultAction(zoomOutAction);
+    zoomOutButton->setAutoRaise(true);
+    detailLayout->addWidget(zoomOutButton);
+    m_zoomLabel = new QLabel(this);
+    m_zoomLabel->setObjectName(QStringLiteral("noteZoom"));
+    m_zoomLabel->setAlignment(Qt::AlignCenter);
+    m_zoomLabel->setMinimumWidth(44);
+    detailLayout->addWidget(m_zoomLabel);
+    QAction *zoomInAction = new QAction(
+        IconHelper::fromTheme(QStringLiteral("zoom-in"), QStringLiteral(":/icons/tabler/plus.svg")),
+        tr("Zoom In"),
+        this);
+    zoomInAction->setObjectName(QStringLiteral("noteZoomInAction"));
+    auto *zoomInButton = new QToolButton(this);
+    zoomInButton->setDefaultAction(zoomInAction);
+    zoomInButton->setAutoRaise(true);
+    detailLayout->addWidget(zoomInButton);
+    QAction *zoomResetAction = new QAction(
+        IconHelper::fromTheme(QStringLiteral("zoom-original"), QStringLiteral(":/icons/tabler/zoom-reset.svg")),
+        tr("Reset Zoom"),
+        this);
+    zoomResetAction->setObjectName(QStringLiteral("noteZoomResetAction"));
+    auto *zoomResetButton = new QToolButton(this);
+    zoomResetButton->setDefaultAction(zoomResetAction);
+    zoomResetButton->setAutoRaise(true);
+    detailLayout->addWidget(zoomResetButton);
+    layout->addLayout(detailLayout);
 
     auto *buttonLayout = new QGridLayout();
     m_saveButton = new QPushButton(QCoreApplication::translate("LearningNotesPanel", "Save Note"), this);
@@ -137,8 +345,13 @@ void LearningNotesPanel::setupUi()
     m_autoSaveTimer = new QTimer(this);
     m_autoSaveTimer->setSingleShot(true);
     m_autoSaveTimer->setInterval(1000);
+    m_previewTimer = new QTimer(this);
+    m_previewTimer->setSingleShot(true);
+    m_previewTimer->setInterval(200);
 
     connect(m_editor, &QPlainTextEdit::textChanged, this, [this]() {
+        updateCounts();
+        m_previewTimer->start();
         if (m_loading || !m_note.page.isValid()) {
             return;
         }
@@ -146,14 +359,162 @@ void LearningNotesPanel::setupUi()
         setStatus(QCoreApplication::translate("LearningNotesPanel", "Unsaved"));
         m_autoSaveTimer->start();
     });
+    connect(m_editor, &QPlainTextEdit::selectionChanged, this, &LearningNotesPanel::updateCounts);
     connect(m_autoSaveTimer, &QTimer::timeout, this, [this]() { save(false); });
     connect(m_saveButton, &QPushButton::clicked, this, [this]() { save(true); });
     connect(m_addSelectionButton, &QPushButton::clicked, this, &LearningNotesPanel::addSelectionRequested);
     connect(allNotesButton, &QPushButton::clicked, this, &LearningNotesPanel::showAllNotes);
+    connect(m_previewTimer, &QTimer::timeout, this, &LearningNotesPanel::updatePreview);
+    connect(m_modeTabs, &QTabWidget::currentChanged, this, [this](int index) {
+        if (index == 1) {
+            updatePreview();
+        }
+    });
+    connect(m_preview, &QTextBrowser::anchorClicked, this, [](const QUrl &url) { QDesktopServices::openUrl(url); });
+    connect(undoAction, &QAction::triggered, m_editor, &QPlainTextEdit::undo);
+    connect(redoAction, &QAction::triggered, m_editor, &QPlainTextEdit::redo);
+    connect(lineWrapAction, &QAction::toggled, this, &LearningNotesPanel::setLineWrap);
+    connect(findPreviousAction, &QAction::triggered, this, [this]() { findNote(true); });
+    connect(findNextAction, &QAction::triggered, this, [this]() { findNote(false); });
+    connect(m_findEdit, &QLineEdit::returnPressed, this, [this]() { findNote(false); });
+    connect(closeFindButton, &QToolButton::clicked, findWidget, &QWidget::hide);
+    connect(zoomOutAction, &QAction::triggered, this, [this]() {
+        setZoom((m_settings ? m_settings->learningNotesZoom : 115) - 10);
+    });
+    connect(zoomInAction, &QAction::triggered, this, [this]() {
+        setZoom((m_settings ? m_settings->learningNotesZoom : 115) + 10);
+    });
+    connect(zoomResetAction, &QAction::triggered, this, [this]() { setZoom(115); });
+    connect(expandAction, &QAction::toggled, this, &LearningNotesPanel::expandedModeRequested);
+    connect(focusAction, &QAction::toggled, this, &LearningNotesPanel::focusModeRequested);
+    connect(expandAction, &QAction::toggled, this, [expandAction](bool expanded) {
+        expandAction->setText(expanded ? tr("Restore Notes") : tr("Expand Notes"));
+    });
+    connect(focusAction, &QAction::toggled, this, [focusAction](bool focused) {
+        focusAction->setText(focused ? tr("Exit Focus") : tr("Focus Notes"));
+    });
+    connect(focusAction, &QAction::toggled, expandAction, [expandAction](bool focused) {
+        expandAction->setEnabled(!focused);
+    });
     auto *saveShortcut = new QShortcut(QKeySequence::Save, this);
     connect(saveShortcut, &QShortcut::activated, this, [this]() { save(true); });
+    auto *findAction = new QAction(this);
+    findAction->setObjectName(QStringLiteral("noteFindAction"));
+    findAction->setShortcut(QKeySequence::Find);
+    findAction->setShortcutContext(Qt::WidgetWithChildrenShortcut);
+    addAction(findAction);
+    connect(findAction, &QAction::triggered, this, [findWidget, this]() {
+        findWidget->show();
+        m_findEdit->selectAll();
+        m_findEdit->setFocus();
+    });
+    zoomOutAction->setShortcut(QKeySequence::ZoomOut);
+    zoomOutAction->setShortcutContext(Qt::WidgetWithChildrenShortcut);
+    zoomInAction->setShortcuts({QKeySequence::ZoomIn, QKeySequence(QStringLiteral("Ctrl+="))});
+    zoomInAction->setShortcutContext(Qt::WidgetWithChildrenShortcut);
+    zoomResetAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+0")));
+    zoomResetAction->setShortcutContext(Qt::WidgetWithChildrenShortcut);
+    addActions({zoomOutAction, zoomInAction, zoomResetAction});
+
+    setLineWrap(lineWrapAction->isChecked());
+    setZoom(m_settings ? m_settings->learningNotesZoom : 115);
+    updateCounts();
 
     setPage({});
+}
+
+void LearningNotesPanel::applyFormat(int action)
+{
+    const QTextCursor current = m_editor->textCursor();
+    const QString before = m_editor->toPlainText();
+    const auto edit = LearningNotesMarkdown::apply(static_cast<LearningNotesMarkdown::Action>(action),
+                                                   before,
+                                                   current.selectionStart(),
+                                                   current.selectionEnd() - current.selectionStart());
+    qsizetype prefix = 0;
+    while (prefix < before.size() && prefix < edit.text.size() && before.at(prefix) == edit.text.at(prefix)) {
+        ++prefix;
+    }
+    qsizetype suffix = 0;
+    while (suffix < before.size() - prefix && suffix < edit.text.size() - prefix
+           && before.at(before.size() - suffix - 1) == edit.text.at(edit.text.size() - suffix - 1)) {
+        ++suffix;
+    }
+
+    QTextCursor cursor(m_editor->document());
+    cursor.beginEditBlock();
+    cursor.setPosition(static_cast<int>(prefix));
+    cursor.setPosition(static_cast<int>(before.size() - suffix), QTextCursor::KeepAnchor);
+    cursor.insertText(edit.text.mid(prefix, edit.text.size() - prefix - suffix));
+    cursor.endEditBlock();
+    cursor.setPosition(edit.selectionStart);
+    cursor.setPosition(edit.selectionStart + edit.selectionLength, QTextCursor::KeepAnchor);
+    m_editor->setTextCursor(cursor);
+    m_editor->setFocus();
+}
+
+void LearningNotesPanel::updatePreview()
+{
+    m_preview->document()->setMarkdown(m_editor->toPlainText(), QTextDocument::MarkdownDialectGitHub);
+}
+
+void LearningNotesPanel::exitFocusMode()
+{
+    m_focusAction->setChecked(false);
+}
+
+void LearningNotesPanel::updateCounts()
+{
+    const QTextCursor cursor = m_editor->textCursor();
+    const auto value = LearningNotesMarkdown::counts(m_editor->toPlainText(),
+                                                     cursor.selectionStart(),
+                                                     cursor.selectionEnd() - cursor.selectionStart());
+    QString text = tr("%1 words · %2 characters").arg(value.words).arg(value.characters);
+    if (value.selectedCharacters > 0) {
+        text += tr(" · %1 selected").arg(value.selectedCharacters);
+    }
+    m_countLabel->setText(text);
+}
+
+void LearningNotesPanel::findNote(bool backward)
+{
+    if (m_findEdit->text().isEmpty()) {
+        return;
+    }
+    QTextDocument::FindFlags flags;
+    flags.setFlag(QTextDocument::FindBackward, backward);
+    if (m_editor->find(m_findEdit->text(), flags)) {
+        return;
+    }
+    QTextCursor cursor = m_editor->textCursor();
+    cursor.movePosition(backward ? QTextCursor::End : QTextCursor::Start);
+    m_editor->setTextCursor(cursor);
+    m_editor->find(m_findEdit->text(), flags);
+}
+
+void LearningNotesPanel::setZoom(int percent)
+{
+    const int zoom = LearningNotesMarkdown::clampZoom(percent);
+    QFont editorFont = QFontDatabase::systemFont(QFontDatabase::FixedFont);
+    editorFont.setPointSizeF(editorFont.pointSizeF() * zoom / 100.0);
+    m_editor->setFont(editorFont);
+    QFont previewFont = font();
+    previewFont.setPointSizeF(previewFont.pointSizeF() * zoom / 100.0);
+    m_preview->setFont(previewFont);
+    m_zoomLabel->setText(tr("%1%").arg(zoom));
+    if (m_settings != nullptr && m_settings->learningNotesZoom != zoom) {
+        m_settings->learningNotesZoom = zoom;
+        m_settings->save();
+    }
+}
+
+void LearningNotesPanel::setLineWrap(bool enabled)
+{
+    m_editor->setLineWrapMode(enabled ? QPlainTextEdit::WidgetWidth : QPlainTextEdit::NoWrap);
+    if (m_settings != nullptr && m_settings->learningNotesLineWrap != enabled) {
+        m_settings->learningNotesLineWrap = enabled;
+        m_settings->save();
+    }
 }
 
 bool LearningNotesPanel::setPage(const LearningNotePage &page)
@@ -170,6 +531,7 @@ bool LearningNotesPanel::setPage(const LearningNotePage &page)
     }
 
     m_autoSaveTimer->stop();
+    m_previewTimer->stop();
     m_note = {};
     m_note.page = page;
     m_lastSelection.clear();
@@ -180,6 +542,7 @@ bool LearningNotesPanel::setPage(const LearningNotePage &page)
 
     const bool valid = page.isValid();
     m_editor->setEnabled(valid);
+    m_modeTabs->setEnabled(valid);
     m_saveButton->setEnabled(valid);
     m_addSelectionButton->setEnabled(valid);
     m_exportButton->setEnabled(true);
@@ -187,6 +550,7 @@ bool LearningNotesPanel::setPage(const LearningNotePage &page)
     m_pageLabel->setText(valid ? page.pageTitle : QCoreApplication::translate(
                                                       "LearningNotesPanel", "No documentation page selected"));
     m_pathLabel->setText(valid ? page.pagePath : QString());
+    m_savedAtLabel->clear();
     if (!valid) {
         setStatus(QCoreApplication::translate("LearningNotesPanel", "No page"));
         return true;
@@ -198,12 +562,14 @@ bool LearningNotesPanel::setPage(const LearningNotePage &page)
         m_editor->setPlainText(m_note.content);
         m_loading = false;
         setStatus(QCoreApplication::translate("LearningNotesPanel", "Saved"));
+        m_savedAtLabel->setText(m_note.updatedAt.toLocalTime().toString(QStringLiteral("HH:mm")));
     } else if (!m_store->lastError().isEmpty()) {
         setStatus(QCoreApplication::translate("LearningNotesPanel", "Save failed"));
         m_editor->setToolTip(m_store->lastError());
     } else {
         setStatus(QCoreApplication::translate("LearningNotesPanel", "New note"));
     }
+    updatePreview();
     return true;
 }
 
@@ -249,6 +615,7 @@ bool LearningNotesPanel::save(bool explicitSave)
     m_dirty = false;
     m_editor->setToolTip({});
     setStatus(QCoreApplication::translate("LearningNotesPanel", "Saved"));
+    m_savedAtLabel->setText(m_note.updatedAt.toLocalTime().toString(QStringLiteral("HH:mm")));
     return true;
 }
 

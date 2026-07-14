@@ -74,6 +74,8 @@ private:
     void setupTabBar();
     void showDevelopmentTool(int index);
     void updateDevelopmentActions();
+    void setNotesExpanded(bool expanded);
+    void setNotesFocusMode(bool focused);
 
     void addTab(BrowserTab *tab, int index = -1, bool activate = true);
     BrowserTab *currentTab() const;
@@ -98,6 +100,11 @@ private:
     QDockWidget *m_webPlaygroundDock = nullptr;
     QTabWidget *m_developmentTabs = nullptr;
     LearningNotesPanel *m_learningNotesPanel = nullptr;
+    QList<int> m_notesExpandedSizes;
+    QList<int> m_notesFocusSizes;
+    bool m_notesFocusMode = false;
+    bool m_notesFocusSidebarVisible = false;
+    bool m_notesFocusDockVisible = false;
 
     // TODO: Replace with proper action manager.
     QAction *m_showDocsetManagerAction = nullptr;

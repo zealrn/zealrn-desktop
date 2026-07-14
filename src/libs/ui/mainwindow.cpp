@@ -53,9 +53,9 @@ namespace Zeal::WidgetUi {
 
 namespace {
 constexpr int DefaultSidebarWidth = 180;
-constexpr int DefaultLearningNotesWidth = 300;
+constexpr int DefaultLearningNotesWidth = 410;
 constexpr int MainWindowStateVersion = 1;
-constexpr int MinimumLearningNotesWidth = 240;
+constexpr int MinimumLearningNotesWidth = 300;
 } // namespace
 
 MainWindow::MainWindow(Core::Application *app, QWidget *parent)
@@ -68,7 +68,7 @@ MainWindow::MainWindow(Core::Application *app, QWidget *parent)
 #else
     setWindowTitle(tr("ZealRN Portable"));
 #endif
-    resize(900, 600); // Default size. May be overridden by restoreGeometry.
+    resize(1100, 700); // Default size. May be overridden by restoreGeometry.
 
     m_webPlaygroundDock = new QDockWidget(tr("Development Tools"), this);
     m_webPlaygroundDock->setObjectName(QStringLiteral("webPlaygroundDock"));
@@ -125,7 +125,7 @@ MainWindow::MainWindow(Core::Application *app, QWidget *parent)
     auto *sb = new Sidebar::Container();
     sb->addView(sbView);
 
-    m_learningNotesPanel = new LearningNotesPanel(m_splitter);
+    m_learningNotesPanel = new LearningNotesPanel(m_settings, m_splitter);
     m_learningNotesPanel->setMinimumWidth(MinimumLearningNotesWidth);
     connect(m_learningNotesPanel, &LearningNotesPanel::addSelectionRequested, this, [this]() {
         if (const auto *tab = currentTab()) {
@@ -141,6 +141,8 @@ MainWindow::MainWindow(Core::Application *app, QWidget *parent)
                     createTab(docset->baseUrl().resolved(QUrl(page.pagePath)));
                 }
             });
+    connect(m_learningNotesPanel, &LearningNotesPanel::expandedModeRequested, this, &MainWindow::setNotesExpanded);
+    connect(m_learningNotesPanel, &LearningNotesPanel::focusModeRequested, this, &MainWindow::setNotesFocusMode);
 
     // Setup splitter.
     m_splitter->insertWidget(0, sb);
@@ -744,6 +746,54 @@ void MainWindow::updateDevelopmentActions()
     m_showDeveloperTerminalAction->setChecked(visible && index == 1);
 }
 
+void MainWindow::setNotesExpanded(bool expanded)
+{
+    if (m_notesFocusMode) {
+        return;
+    }
+    if (!expanded) {
+        if (m_notesExpandedSizes.size() == 3) {
+            m_splitter->setSizes(m_notesExpandedSizes);
+        }
+        m_notesExpandedSizes.clear();
+        return;
+    }
+
+    m_notesExpandedSizes = m_splitter->sizes();
+    const int sidebarWidth = m_notesExpandedSizes.value(0);
+    const int available = qMax(0, m_splitter->width() - sidebarWidth);
+    const int notesWidth = qMin(qMax(0, available - m_webViewStack->minimumWidth()),
+                                qMax(MinimumLearningNotesWidth, qRound(available * 0.42)));
+    m_splitter->setSizes({sidebarWidth, available - notesWidth, notesWidth});
+}
+
+void MainWindow::setNotesFocusMode(bool focused)
+{
+    if (focused == m_notesFocusMode) {
+        return;
+    }
+    m_notesFocusMode = focused;
+    QWidget *sidebar = m_splitter->widget(0);
+    if (!focused) {
+        sidebar->setVisible(m_notesFocusSidebarVisible);
+        m_webPlaygroundDock->setVisible(m_notesFocusDockVisible);
+        if (m_notesFocusSizes.size() == 3) {
+            m_splitter->setSizes(m_notesFocusSizes);
+        }
+        m_notesFocusSizes.clear();
+        return;
+    }
+
+    m_notesFocusSizes = m_splitter->sizes();
+    m_notesFocusSidebarVisible = sidebar->isVisible();
+    m_notesFocusDockVisible = m_webPlaygroundDock->isVisible();
+    sidebar->hide();
+    m_webPlaygroundDock->hide();
+    const int notesWidth = qMin(qMax(0, m_splitter->width() - m_webViewStack->minimumWidth()),
+                                qMax(MinimumLearningNotesWidth, qRound(m_splitter->width() * 0.45)));
+    m_splitter->setSizes({0, m_splitter->width() - notesWidth, notesWidth});
+}
+
 void MainWindow::setupShortcuts()
 {
     // Initialize the global shortcut handler if supported.
@@ -939,6 +989,10 @@ void MainWindow::keyPressEvent(QKeyEvent *keyEvent)
 {
     switch (keyEvent->key()) {
     case Qt::Key_Escape:
+        if (m_notesFocusMode) {
+            m_learningNotesPanel->exitFocusMode();
+            return;
+        }
         if (auto *tab = currentTab()) {
             tab->searchSidebar()->focusSearchEdit(true);
         }
