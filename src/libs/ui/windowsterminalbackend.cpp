@@ -288,10 +288,20 @@ private:
         const HANDLE output = m_outputRead;
         m_reader = std::thread([this, output]() {
             char buffer[16384];
-            DWORD count = 0;
-            while (!m_stopIo && ReadFile(output, buffer, sizeof(buffer), &count, nullptr)) {
-                if (count == 0) {
+            while (!m_stopIo) {
+                DWORD available = 0;
+                if (!PeekNamedPipe(output, nullptr, 0, nullptr, &available, nullptr)) {
+                    return;
+                }
+                if (available == 0) {
+                    // ponytail: polling avoids uncancellable reads; use overlapped pipes if idle wakeups matter.
+                    Sleep(5);
                     continue;
+                }
+                DWORD count = 0;
+                const DWORD requested = std::min<DWORD>(available, sizeof(buffer));
+                if (!ReadFile(output, buffer, requested, &count, nullptr)) {
+                    return;
                 }
                 const QByteArray data(buffer, static_cast<qsizetype>(count));
                 QMetaObject::invokeMethod(this, [this, data]() { emit outputReceived(data); }, Qt::QueuedConnection);
