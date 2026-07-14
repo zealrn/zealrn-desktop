@@ -24,6 +24,13 @@ target_link_libraries(helpdialog_test PRIVATE Ui Core Qt6::Test Qt6::Widgets)
 zeal_add_test(helpdialog_test)
 set_tests_properties(helpdialog_test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
+add_executable(firstusetip_test firstusetip_test.cpp)
+target_link_libraries(firstusetip_test PRIVATE Ui Core Qt6::Test Qt6::Widgets)
+
+zeal_add_test(firstusetip_test)
+set_tests_properties(firstusetip_test PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QTWEBENGINE_DISABLE_SANDBOX=1")
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     add_executable(posixptybackend_test posixptybackend_test.cpp)
     target_link_libraries(posixptybackend_test PRIVATE Ui Core Qt6::Test)

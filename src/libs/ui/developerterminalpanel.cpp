@@ -3,6 +3,7 @@
 
 #include "developerterminalpanel.h"
 
+#include "firstusetip.h"
 #include "terminalbackend.h"
 #include "terminalsupport.h"
 #include "terminalview.h"
@@ -37,6 +38,10 @@ DeveloperTerminalPanel::DeveloperTerminalPanel(Core::Settings *settings, QWidget
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(8, 8, 8, 8);
     layout->setSpacing(8);
+    layout->addWidget(new FirstUseTip(m_settings,
+                                     QStringLiteral("developer-terminal"),
+                                     tr("This is your normal local shell. Commands can change files."),
+                                     this));
 
     auto *toolbar = new QHBoxLayout();
     toolbar->addWidget(new QLabel(tr("Shell"), this));

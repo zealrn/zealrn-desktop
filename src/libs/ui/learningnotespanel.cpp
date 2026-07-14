@@ -4,6 +4,7 @@
 #include "learningnotespanel.h"
 
 #include "allnotesdialog.h"
+#include "firstusetip.h"
 #include "learningnotesmarkdown.h"
 #include "learningnotesstore.h"
 #include "widgets/iconhelper.h"
@@ -117,6 +118,13 @@ void LearningNotesPanel::setupUi()
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(10, 10, 10, 10);
     layout->setSpacing(6);
+    if (m_settings != nullptr) {
+        layout->addWidget(new FirstUseTip(m_settings,
+                                         QStringLiteral("learning-notes"),
+                                         tr("Start Note is always available. Documentation notes autosave and are "
+                                            "linked to the current page."),
+                                         this));
+    }
 
     auto *titleLayout = new QHBoxLayout();
     auto *title = new QLabel(QCoreApplication::translate("LearningNotesPanel", "Learning Notes"), this);

@@ -3,6 +3,7 @@
 
 #include "webplaygroundpanel.h"
 
+#include "firstusetip.h"
 #include "webplaygroundeditor.h"
 #include "webplaygroundpreview.h"
 #include "webplaygroundproject.h"
@@ -46,6 +47,10 @@ WebPlaygroundPanel::WebPlaygroundPanel(Core::Settings *settings, QWidget *parent
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(8, 8, 8, 8);
     layout->setSpacing(8);
+    layout->addWidget(new FirstUseTip(m_settings,
+                                     QStringLiteral("web-playground"),
+                                     tr("Edit HTML, CSS, or JavaScript, then click Run."),
+                                     this));
 
     auto *editorControls = new QHBoxLayout();
     m_editorTabs = new QTabBar(this);
