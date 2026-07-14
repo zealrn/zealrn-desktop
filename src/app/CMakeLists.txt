@@ -91,10 +91,12 @@ elseif(WIN32)
     install(FILES
         "${CMAKE_SOURCE_DIR}/COPYING"
         "${CMAKE_SOURCE_DIR}/README.md"
-        "${CMAKE_SOURCE_DIR}/tools/playground/THIRD_PARTY_LICENSES.md"
-        "${CMAKE_SOURCE_DIR}/tools/terminal-frontend/THIRD_PARTY_LICENSES.md"
         DESTINATION .
     )
+    install(FILES "${CMAKE_SOURCE_DIR}/tools/playground/THIRD_PARTY_LICENSES.md"
+            DESTINATION . RENAME PLAYGROUND_THIRD_PARTY_LICENSES.md)
+    install(FILES "${CMAKE_SOURCE_DIR}/tools/terminal-frontend/THIRD_PARTY_LICENSES.md"
+            DESTINATION . RENAME TERMINAL_THIRD_PARTY_LICENSES.md)
 
     if(_use_qt_cmake_commands)
         # Install Qt runtime dependencies.
@@ -109,9 +111,11 @@ elseif(UNIX)
     install(FILES "${CMAKE_SOURCE_DIR}/COPYING"
             DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/doc/zealrn")
     install(FILES "${CMAKE_SOURCE_DIR}/tools/playground/THIRD_PARTY_LICENSES.md"
-            DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/doc/zealrn")
+            DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/doc/zealrn"
+            RENAME PLAYGROUND_THIRD_PARTY_LICENSES.md)
     install(FILES "${CMAKE_SOURCE_DIR}/tools/terminal-frontend/THIRD_PARTY_LICENSES.md"
-            DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/doc/zealrn")
+            DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/doc/zealrn"
+            RENAME TERMINAL_THIRD_PARTY_LICENSES.md)
 endif()
 
 #

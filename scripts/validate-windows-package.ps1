@@ -22,7 +22,8 @@ $required = @(
     "plugins/sqldrivers/qsqlite.dll",
     "resources/qtwebengine_resources.pak",
     "COPYING",
-    "THIRD_PARTY_LICENSES.md"
+    "PLAYGROUND_THIRD_PARTY_LICENSES.md",
+    "TERMINAL_THIRD_PARTY_LICENSES.md"
 )
 
 foreach ($relativePath in $required) {
