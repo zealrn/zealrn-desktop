@@ -24,6 +24,7 @@ private slots:
     void qsettingsRestoresAfterReopen_data();
     void qsettingsRestoresAfterReopen();
     void terminalSettingsRestoreAfterReopen();
+    void invalidTerminalFontSizeIsClamped();
     void invalidBottomToolFallsBackToWebPlayground();
     void sharedDocsetSettingRestoresAfterReopen();
     void existingZealDocsetPathsFindsNativeAndFlatpakLibraries();
@@ -115,6 +116,7 @@ void SettingsTest::terminalSettingsRestoreAfterReopen()
         settings.terminalSafetyAcknowledged = true;
         settings.terminalShell = QStringLiteral("/bin/zsh");
         settings.terminalWorkingDirectory = QStringLiteral("/home/test/work");
+        settings.terminalFontSize = 18;
         settings.bottomDevelopmentTool = 1;
         settings.save();
     }
@@ -123,7 +125,24 @@ void SettingsTest::terminalSettingsRestoreAfterReopen()
     QVERIFY(restored.terminalSafetyAcknowledged);
     QCOMPARE(restored.terminalShell, QStringLiteral("/bin/zsh"));
     QCOMPARE(restored.terminalWorkingDirectory, QStringLiteral("/home/test/work"));
+    QCOMPARE(restored.terminalFontSize, 18);
     QCOMPARE(restored.bottomDevelopmentTool, 1);
+}
+
+void SettingsTest::invalidTerminalFontSizeIsClamped()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, dir.path());
+
+    {
+        QSettings settings;
+        settings.setValue(QStringLiteral("ui/terminal_font_size"), 200);
+        settings.sync();
+    }
+
+    Settings settings;
+    QCOMPARE(settings.terminalFontSize, 28);
 }
 
 void SettingsTest::invalidBottomToolFallsBackToWebPlayground()

@@ -7,6 +7,10 @@ add_executable(developerterminal_test developerterminal_test.cpp)
 target_link_libraries(developerterminal_test PRIVATE Ui Core Qt6::Test Qt6::Widgets)
 
 zeal_add_test(developerterminal_test)
+if(NOT WIN32)
+    set_tests_properties(developerterminal_test PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QTWEBENGINE_DISABLE_SANDBOX=1")
+endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     add_executable(posixptybackend_test posixptybackend_test.cpp)

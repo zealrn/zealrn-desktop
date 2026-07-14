@@ -31,6 +31,7 @@ void TerminalBridge::enqueueOutput(const QByteArray &data)
 void TerminalBridge::frontendReady()
 {
     m_frontendReady = true;
+    emit ready();
     scheduleFlush();
 }
 

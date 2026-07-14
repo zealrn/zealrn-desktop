@@ -553,6 +553,7 @@ void MainWindow::setupMainMenu()
 
     m_showDeveloperTerminalAction = menu->addAction(tr("Show Developer &Terminal"));
     m_showDeveloperTerminalAction->setCheckable(true);
+    m_showDeveloperTerminalAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+`")));
     addAction(m_showDeveloperTerminalAction);
     connect(m_showDeveloperTerminalAction, &QAction::toggled, this, [this](bool checked) {
         if (checked) {

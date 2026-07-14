@@ -47,6 +47,7 @@ private:
     void chooseWorkingDirectory();
     void openExternalTerminal();
     void applyAppearance();
+    void setTerminalFontSize(int size);
     void updateStatus(const QString &status);
 
     Core::Settings *m_settings = nullptr;
@@ -57,9 +58,12 @@ private:
     QComboBox *m_shell = nullptr;
     QLabel *m_workingDirectoryLabel = nullptr;
     QLabel *m_statusLabel = nullptr;
+    QLabel *m_fontSizeLabel = nullptr;
     QLabel *m_backendMessage = nullptr;
     QVBoxLayout *m_terminalLayout = nullptr;
     QPushButton *m_newSessionButton = nullptr;
+    QPushButton *m_stopButton = nullptr;
+    QPushButton *m_searchButton = nullptr;
     QPushButton *m_clearButton = nullptr;
     QPushButton *m_copyButton = nullptr;
     QPushButton *m_pasteButton = nullptr;

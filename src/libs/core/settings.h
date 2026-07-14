@@ -31,6 +31,7 @@ public:
     bool terminalSafetyAcknowledged;
     QString terminalShell;
     QString terminalWorkingDirectory;
+    int terminalFontSize;
     int bottomDevelopmentTool;
     // TODO: bool restoreLastState;
 

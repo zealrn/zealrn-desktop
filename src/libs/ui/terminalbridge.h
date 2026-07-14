@@ -34,6 +34,7 @@ public slots:
     void requestPaste();
 
 signals:
+    void ready();
     void outputReceived(const QString &encodedData);
     void sessionStarted(const QString &profile);
     void sessionExited(int exitCode, bool exitCodeAvailable);

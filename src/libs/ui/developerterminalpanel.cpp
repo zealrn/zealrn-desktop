@@ -14,10 +14,11 @@
 #include <QComboBox>
 #include <QDesktopServices>
 #include <QDir>
-#include <QFileInfo>
 #include <QFileDialog>
 #include <QHBoxLayout>
+#include <QInputDialog>
 #include <QLabel>
+#include <QLineEdit>
 #include <QMessageBox>
 #include <QProcess>
 #include <QPushButton>
@@ -39,21 +40,40 @@ DeveloperTerminalPanel::DeveloperTerminalPanel(Core::Settings *settings, QWidget
     auto *toolbar = new QHBoxLayout();
     toolbar->addWidget(new QLabel(tr("Shell"), this));
     m_shell = new QComboBox(this);
-    const QStringList shells = TerminalSupport::availableShells();
-    m_shell->addItems(shells);
-    m_shell->setCurrentText(TerminalSupport::validatedShell(m_settings->terminalShell, shells));
+    m_shell->setObjectName(QStringLiteral("terminalShell"));
+    const QList<TerminalProfile> profiles = TerminalSupport::availableTerminalProfiles();
+    for (const TerminalProfile &profile : profiles) {
+        m_shell->addItem(profile.label, profile.id);
+    }
+    const TerminalProfile selectedProfile = TerminalSupport::validatedTerminalProfile(m_settings->terminalShell, profiles);
+    m_shell->setCurrentIndex(m_shell->findData(selectedProfile.id));
     toolbar->addWidget(m_shell);
 
     m_newSessionButton = new QPushButton(tr("New Session"), this);
     toolbar->addWidget(m_newSessionButton);
+    m_stopButton = new QPushButton(tr("Stop"), this);
+    m_stopButton->setObjectName(QStringLiteral("terminalStop"));
+    toolbar->addWidget(m_stopButton);
     auto *workingDirectoryButton = new QPushButton(tr("Working Directory"), this);
     toolbar->addWidget(workingDirectoryButton);
     m_clearButton = new QPushButton(tr("Clear"), this);
     m_copyButton = new QPushButton(tr("Copy"), this);
     m_pasteButton = new QPushButton(tr("Paste"), this);
     toolbar->addWidget(m_clearButton);
+    m_searchButton = new QPushButton(tr("Search"), this);
+    m_searchButton->setObjectName(QStringLiteral("terminalSearch"));
+    toolbar->addWidget(m_searchButton);
     toolbar->addWidget(m_copyButton);
     toolbar->addWidget(m_pasteButton);
+    auto *decreaseFontButton = new QPushButton(QStringLiteral("-"), this);
+    decreaseFontButton->setToolTip(tr("Decrease terminal font size"));
+    m_fontSizeLabel = new QLabel(this);
+    m_fontSizeLabel->setObjectName(QStringLiteral("terminalFontSize"));
+    auto *increaseFontButton = new QPushButton(QStringLiteral("+"), this);
+    increaseFontButton->setToolTip(tr("Increase terminal font size"));
+    toolbar->addWidget(decreaseFontButton);
+    toolbar->addWidget(m_fontSizeLabel);
+    toolbar->addWidget(increaseFontButton);
     auto *externalButton = new QPushButton(tr("Open External Terminal"), this);
     toolbar->addWidget(externalButton);
     toolbar->addStretch();
@@ -104,14 +124,24 @@ DeveloperTerminalPanel::DeveloperTerminalPanel(Core::Settings *settings, QWidget
     warning->setWordWrap(true);
     layout->addWidget(warning);
 
-    m_newSessionButton->setEnabled(!shells.isEmpty() && !m_workingDirectory.isEmpty());
+    m_newSessionButton->setEnabled(!profiles.isEmpty() && !m_workingDirectory.isEmpty());
+    m_stopButton->setEnabled(false);
     m_clearButton->setEnabled(false);
+    m_searchButton->setEnabled(false);
     m_copyButton->setEnabled(false);
     m_pasteButton->setEnabled(false);
 
     connect(m_newSessionButton, &QPushButton::clicked, this, &DeveloperTerminalPanel::startSession);
+    connect(m_stopButton, &QPushButton::clicked, this, [this]() { m_terminalView->terminate(); });
     connect(workingDirectoryButton, &QPushButton::clicked, this, &DeveloperTerminalPanel::chooseWorkingDirectory);
     connect(m_clearButton, &QPushButton::clicked, this, [this]() { m_terminalView->clear(); });
+    connect(m_searchButton, &QPushButton::clicked, this, [this]() {
+        bool accepted = false;
+        const QString text = QInputDialog::getText(this, tr("Search Terminal"), tr("Find:"), QLineEdit::Normal, {}, &accepted);
+        if (accepted && !text.isEmpty()) {
+            m_terminalView->search(text);
+        }
+    });
     connect(m_copyButton, &QPushButton::clicked, this, [this]() { m_terminalView->copy(); });
     connect(m_pasteButton, &QPushButton::clicked, this, [this]() { m_terminalView->paste(); });
     connect(externalButton, &QPushButton::clicked, this, &DeveloperTerminalPanel::openExternalTerminal);
@@ -122,7 +152,16 @@ DeveloperTerminalPanel::DeveloperTerminalPanel(Core::Settings *settings, QWidget
     connect(openFolderButton, &QPushButton::clicked, this, [this]() {
         QDesktopServices::openUrl(QUrl::fromLocalFile(m_workingDirectory));
     });
+    connect(decreaseFontButton, &QPushButton::clicked, this, [this]() {
+        setTerminalFontSize(m_settings->terminalFontSize - 1);
+        m_settings->save();
+    });
+    connect(increaseFontButton, &QPushButton::clicked, this, [this]() {
+        setTerminalFontSize(m_settings->terminalFontSize + 1);
+        m_settings->save();
+    });
     connect(m_settings, &Core::Settings::updated, this, &DeveloperTerminalPanel::applyAppearance);
+    setTerminalFontSize(m_settings->terminalFontSize);
 }
 
 DeveloperTerminalPanel::~DeveloperTerminalPanel() = default;
@@ -131,6 +170,9 @@ void DeveloperTerminalPanel::showEvent(QShowEvent *event)
 {
     QWidget::showEvent(event);
     ensureBackend();
+    if (m_terminalView) {
+        m_terminalView->focusTerminal();
+    }
 }
 
 bool DeveloperTerminalPanel::acknowledgeSafety()
@@ -163,13 +205,17 @@ void DeveloperTerminalPanel::ensureBackend()
     m_backend = createTerminalBackend(this);
     connect(m_backend.get(), &TerminalBackend::started, this, [this](const TerminalProfile &) {
         updateStatus(tr("Running"));
+        m_stopButton->setEnabled(true);
         m_clearButton->setEnabled(true);
+        m_searchButton->setEnabled(true);
         m_copyButton->setEnabled(true);
         m_pasteButton->setEnabled(true);
     });
     connect(m_backend.get(), &TerminalBackend::exited, this, [this](int exitCode, bool available) {
         updateStatus(available ? tr("Exited (%1)").arg(exitCode) : tr("Exited"));
+        m_stopButton->setEnabled(false);
         m_clearButton->setEnabled(false);
+        m_searchButton->setEnabled(false);
         m_copyButton->setEnabled(false);
         m_pasteButton->setEnabled(false);
     });
@@ -180,12 +226,16 @@ void DeveloperTerminalPanel::ensureBackend()
 
     if (m_backend->isAvailable()) {
         m_terminalView = new TerminalView(m_backend.get(), this);
+        m_terminalView->setObjectName(QStringLiteral("terminalView"));
         m_backendMessage->hide();
         m_terminalLayout->addWidget(m_terminalView);
     } else {
         m_backendMessage->setText(m_backend->unavailableReason());
     }
     applyAppearance();
+    if (m_terminalView) {
+        m_terminalView->setFontSize(m_settings->terminalFontSize);
+    }
 }
 
 void DeveloperTerminalPanel::startSession()
@@ -212,15 +262,15 @@ void DeveloperTerminalPanel::startSession()
         m_backend->terminate();
     }
 
-    m_settings->terminalShell = m_shell->currentText();
+    m_settings->terminalShell = m_shell->currentData().toString();
     m_settings->terminalWorkingDirectory = m_workingDirectory;
     m_settings->save();
-    const TerminalProfile profile = {m_settings->terminalShell,
-                                     QFileInfo(m_settings->terminalShell).fileName(),
-                                     m_settings->terminalShell,
-                                     {}};
+    const TerminalProfile profile = TerminalSupport::validatedTerminalProfile(m_settings->terminalShell,
+                                                                               TerminalSupport::availableTerminalProfiles());
     if (!m_terminalView->start(profile, m_workingDirectory)) {
         updateStatus(tr("Failed to start"));
+    } else {
+        m_terminalView->focusTerminal();
     }
 }
 
@@ -242,7 +292,7 @@ void DeveloperTerminalPanel::openExternalTerminal()
         return;
     }
 
-    const auto launch = TerminalSupport::detectedExternalTerminal(m_shell->currentText(), m_workingDirectory);
+    const auto launch = TerminalSupport::detectedExternalTerminal(m_shell->currentData().toString(), m_workingDirectory);
     if (!launch.isValid() || !QProcess::startDetached(launch.program, launch.arguments, m_workingDirectory)) {
         QMessageBox::warning(this,
                              tr("External Terminal Unavailable"),
@@ -254,6 +304,16 @@ void DeveloperTerminalPanel::applyAppearance()
 {
     if (m_terminalView) {
         m_terminalView->setDark(m_settings->isDarkModeEnabled());
+    }
+}
+
+void DeveloperTerminalPanel::setTerminalFontSize(int size)
+{
+    const int boundedSize = TerminalSupport::clampTerminalFontSize(size);
+    m_settings->terminalFontSize = boundedSize;
+    m_fontSizeLabel->setText(tr("%1 px").arg(boundedSize));
+    if (m_terminalView) {
+        m_terminalView->setFontSize(boundedSize);
     }
 }
 

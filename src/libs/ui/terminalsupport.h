@@ -4,6 +4,9 @@
 #ifndef ZEAL_WIDGETUI_TERMINALSUPPORT_H
 #define ZEAL_WIDGETUI_TERMINALSUPPORT_H
 
+#include "terminalbackend.h"
+
+#include <QList>
 #include <QStringList>
 
 namespace Zeal::WidgetUi::TerminalSupport {
@@ -28,6 +31,10 @@ struct ExternalTerminalLaunch {
 
 QStringList availableShells();
 QString validatedShell(const QString &savedShell, const QStringList &shells);
+QList<TerminalProfile> terminalProfiles(Platform platform, const QStringList &shells);
+QList<TerminalProfile> availableTerminalProfiles();
+TerminalProfile validatedTerminalProfile(const QString &savedId, const QList<TerminalProfile> &profiles);
+int clampTerminalFontSize(int size);
 QString validatedWorkingDirectory(const QString &savedDirectory,
                                   const QString &homeDirectory,
                                   const QString &workspaceDirectory);

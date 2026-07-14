@@ -105,6 +105,7 @@ TerminalView::TerminalView(TerminalBackend *backend, QWidget *parent)
         QApplication::clipboard()->setText(text);
     });
     connect(m_bridge, &TerminalBridge::pasteRequested, this, &TerminalView::sendClipboard);
+    connect(m_bridge, &TerminalBridge::ready, this, &TerminalView::focusTerminal);
 
     m_view->load(TerminalUrl);
 }

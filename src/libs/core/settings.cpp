@@ -157,6 +157,7 @@ void Settings::load()
     terminalSafetyAcknowledged = settings->value(QStringLiteral("terminal_safety_acknowledged"), false).toBool();
     terminalShell = settings->value(QStringLiteral("terminal_shell")).toString();
     terminalWorkingDirectory = settings->value(QStringLiteral("terminal_working_directory")).toString();
+    terminalFontSize = qBound(10, settings->value(QStringLiteral("terminal_font_size"), 14).toInt(), 28);
     bottomDevelopmentTool = settings->value(QStringLiteral("bottom_development_tool"), 0).toInt();
     if (bottomDevelopmentTool != 0 && bottomDevelopmentTool != 1) {
         bottomDevelopmentTool = 0;
@@ -327,6 +328,7 @@ void Settings::save()
     settings->setValue(QStringLiteral("terminal_safety_acknowledged"), terminalSafetyAcknowledged);
     settings->setValue(QStringLiteral("terminal_shell"), terminalShell);
     settings->setValue(QStringLiteral("terminal_working_directory"), terminalWorkingDirectory);
+    settings->setValue(QStringLiteral("terminal_font_size"), terminalFontSize);
     settings->setValue(QStringLiteral("bottom_development_tool"), bottomDevelopmentTool);
     settings->endGroup();
 

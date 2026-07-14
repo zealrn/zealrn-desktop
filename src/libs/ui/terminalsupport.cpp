@@ -69,6 +69,65 @@ QString validatedShell(const QString &savedShell, const QStringList &shells)
     return shells.contains(savedShell) ? savedShell : shells.value(0);
 }
 
+QList<TerminalProfile> terminalProfiles(Platform platform, const QStringList &shells)
+{
+    QList<TerminalProfile> profiles;
+    profiles.reserve(shells.size());
+    for (const QString &shell : shells) {
+        const QString fileName = QFileInfo(shell).fileName();
+        QString label = fileName;
+        if (platform == Platform::Linux) {
+            if (fileName == QStringLiteral("bash")) {
+                label = QStringLiteral("Bash");
+            } else if (fileName == QStringLiteral("zsh")) {
+                label = QStringLiteral("Zsh");
+            } else if (fileName == QStringLiteral("fish")) {
+                label = QStringLiteral("Fish");
+            } else if (fileName == QStringLiteral("sh")) {
+                label = QStringLiteral("Sh");
+            }
+        } else if (platform == Platform::Windows) {
+            if (fileName.compare(QStringLiteral("pwsh.exe"), Qt::CaseInsensitive) == 0) {
+                label = QStringLiteral("PowerShell 7");
+            } else if (fileName.compare(QStringLiteral("powershell.exe"), Qt::CaseInsensitive) == 0) {
+                label = QStringLiteral("Windows PowerShell");
+            } else if (fileName.compare(QStringLiteral("cmd.exe"), Qt::CaseInsensitive) == 0) {
+                label = QStringLiteral("Command Prompt");
+            } else if (fileName.compare(QStringLiteral("bash.exe"), Qt::CaseInsensitive) == 0) {
+                label = QStringLiteral("Git Bash");
+            }
+        }
+        profiles.append({shell, label, shell, {}});
+    }
+    return profiles;
+}
+
+QList<TerminalProfile> availableTerminalProfiles()
+{
+#ifdef Q_OS_WINDOWS
+    return terminalProfiles(Platform::Windows, availableShells());
+#elif defined(Q_OS_LINUX)
+    return terminalProfiles(Platform::Linux, availableShells());
+#else
+    return terminalProfiles(Platform::Unsupported, availableShells());
+#endif
+}
+
+TerminalProfile validatedTerminalProfile(const QString &savedId, const QList<TerminalProfile> &profiles)
+{
+    for (const TerminalProfile &profile : profiles) {
+        if (profile.id == savedId) {
+            return profile;
+        }
+    }
+    return profiles.value(0);
+}
+
+int clampTerminalFontSize(int size)
+{
+    return qBound(10, size, 28);
+}
+
 QString validatedWorkingDirectory(const QString &savedDirectory,
                                   const QString &homeDirectory,
                                   const QString &workspaceDirectory)

@@ -5,11 +5,18 @@
 #include "../terminalbackend.h"
 #include "../terminalbridge.h"
 #include "../terminalview.h"
+#include "../developerterminalpanel.h"
+
+#include <core/settings.h>
 
 #include <QSignalSpy>
+#include <QSettings>
 #include <QTest>
 #include <QTemporaryDir>
 #include <QUrl>
+#include <QComboBox>
+#include <QLabel>
+#include <QPushButton>
 
 using namespace Zeal::WidgetUi::TerminalSupport;
 
@@ -20,6 +27,9 @@ class DeveloperTerminalTest : public QObject
 private slots:
     void validatedShell_keepsAvailableChoice();
     void validatedShell_fallsBackToFirstAvailable();
+    void terminalProfiles_labelLinuxShells();
+    void validatedTerminalProfile_fallsBackSafely();
+    void terminalFontSize_isBounded();
     void validatedWorkingDirectory_usesSafeFallbackOrder();
     void bottomToolFromValue_rejectsInvalidValue();
     void linuxExternalTerminal_buildsSeparateArguments();
@@ -31,6 +41,7 @@ private slots:
     void terminalBridge_batchesOutput();
     void terminalBridge_boundsPendingOutput();
     void terminalView_allowsOnlyLocalAssets();
+    void terminalPanel_startsLazyWithSessionControls();
 };
 
 void DeveloperTerminalTest::validatedShell_keepsAvailableChoice()
@@ -44,6 +55,40 @@ void DeveloperTerminalTest::validatedShell_fallsBackToFirstAvailable()
     QCOMPARE(validatedShell(QStringLiteral("/missing/shell"), {QStringLiteral("/bin/fish"), QStringLiteral("/bin/sh")}),
              QStringLiteral("/bin/fish"));
     QVERIFY(validatedShell(QStringLiteral("/missing/shell"), {}).isEmpty());
+}
+
+void DeveloperTerminalTest::terminalProfiles_labelLinuxShells()
+{
+    const auto profiles = terminalProfiles(Platform::Linux,
+                                           {QStringLiteral("/bin/bash"),
+                                            QStringLiteral("/usr/bin/zsh"),
+                                            QStringLiteral("/usr/bin/fish"),
+                                            QStringLiteral("/bin/custom-shell")});
+
+    QCOMPARE(profiles.size(), 4);
+    QCOMPARE(profiles.at(0).label, QStringLiteral("Bash"));
+    QCOMPARE(profiles.at(1).label, QStringLiteral("Zsh"));
+    QCOMPARE(profiles.at(2).label, QStringLiteral("Fish"));
+    QCOMPARE(profiles.at(3).label, QStringLiteral("custom-shell"));
+    QCOMPARE(profiles.at(0).program, QStringLiteral("/bin/bash"));
+}
+
+void DeveloperTerminalTest::validatedTerminalProfile_fallsBackSafely()
+{
+    const auto profiles = terminalProfiles(Platform::Linux,
+                                           {QStringLiteral("/bin/bash"), QStringLiteral("/usr/bin/zsh")});
+
+    QCOMPARE(validatedTerminalProfile(QStringLiteral("/usr/bin/zsh"), profiles).program,
+             QStringLiteral("/usr/bin/zsh"));
+    QCOMPARE(validatedTerminalProfile(QStringLiteral("/missing"), profiles).program, QStringLiteral("/bin/bash"));
+    QVERIFY(validatedTerminalProfile(QStringLiteral("/missing"), {}).program.isEmpty());
+}
+
+void DeveloperTerminalTest::terminalFontSize_isBounded()
+{
+    QCOMPARE(clampTerminalFontSize(1), 10);
+    QCOMPARE(clampTerminalFontSize(14), 14);
+    QCOMPARE(clampTerminalFontSize(99), 28);
 }
 
 void DeveloperTerminalTest::validatedWorkingDirectory_usesSafeFallbackOrder()
@@ -137,6 +182,7 @@ void DeveloperTerminalTest::terminalBridge_queuesOutputUntilReady()
 {
     Zeal::WidgetUi::TerminalBridge bridge;
     QSignalSpy spy(&bridge, &Zeal::WidgetUi::TerminalBridge::outputReceived);
+    QSignalSpy ready(&bridge, &Zeal::WidgetUi::TerminalBridge::ready);
     const QByteArray first("\xe2", 1);
     const QByteArray second("\x82\xac", 2);
 
@@ -146,6 +192,7 @@ void DeveloperTerminalTest::terminalBridge_queuesOutputUntilReady()
     QCOMPARE(spy.count(), 0);
 
     bridge.frontendReady();
+    QCOMPARE(ready.count(), 1);
     QTRY_COMPARE(spy.count(), 1);
     QCOMPARE(QByteArray::fromBase64(spy.takeFirst().at(0).toString().toLatin1()), first + second);
 }
@@ -190,6 +237,27 @@ void DeveloperTerminalTest::terminalView_allowsOnlyLocalAssets()
     QVERIFY(!TerminalView::isAllowedUrl(QUrl(QStringLiteral("https://example.com"))));
     QVERIFY(!TerminalView::isAllowedUrl(QUrl::fromLocalFile(QStringLiteral("/tmp/file"))));
     QVERIFY(!TerminalView::isAllowedUrl(QUrl(QStringLiteral("data:text/html,terminal"))));
+}
+
+void DeveloperTerminalTest::terminalPanel_startsLazyWithSessionControls()
+{
+    QTemporaryDir settingsDirectory;
+    QVERIFY(settingsDirectory.isValid());
+    QSettings::setDefaultFormat(QSettings::IniFormat);
+    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, settingsDirectory.path());
+    QCoreApplication::setOrganizationName(QStringLiteral("ZealTerminalTest"));
+    QCoreApplication::setApplicationName(QStringLiteral("ZealTerminalTest"));
+    Zeal::Core::Settings settings;
+
+    Zeal::WidgetUi::DeveloperTerminalPanel panel(&settings);
+
+    QVERIFY(!panel.findChild<QWidget *>(QStringLiteral("terminalView")));
+    QVERIFY(panel.findChild<QComboBox *>(QStringLiteral("terminalShell")));
+    QVERIFY(panel.findChild<QPushButton *>(QStringLiteral("terminalStop")));
+    QVERIFY(panel.findChild<QPushButton *>(QStringLiteral("terminalSearch")));
+    const auto *fontSize = panel.findChild<QLabel *>(QStringLiteral("terminalFontSize"));
+    QVERIFY(fontSize);
+    QVERIFY(fontSize->text().contains(QString::number(settings.terminalFontSize)));
 }
 
 QTEST_MAIN(DeveloperTerminalTest)
