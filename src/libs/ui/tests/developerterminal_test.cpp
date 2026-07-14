@@ -15,6 +15,7 @@
 #include <QTemporaryDir>
 #include <QUrl>
 #include <QComboBox>
+#include <QFile>
 #include <QLabel>
 #include <QPushButton>
 
@@ -43,6 +44,7 @@ private slots:
     void terminalBridge_batchesOutput();
     void terminalBridge_boundsPendingOutput();
     void terminalView_allowsOnlyLocalAssets();
+    void terminalFrontend_allowsOnlyRequiredInlineStyles();
     void terminalPanel_startsLazyWithSessionControls();
 };
 
@@ -267,6 +269,15 @@ void DeveloperTerminalTest::terminalView_allowsOnlyLocalAssets()
     QVERIFY(!TerminalView::isAllowedUrl(QUrl(QStringLiteral("https://example.com"))));
     QVERIFY(!TerminalView::isAllowedUrl(QUrl::fromLocalFile(QStringLiteral("/tmp/file"))));
     QVERIFY(!TerminalView::isAllowedUrl(QUrl(QStringLiteral("data:text/html,terminal"))));
+}
+
+void DeveloperTerminalTest::terminalFrontend_allowsOnlyRequiredInlineStyles()
+{
+    QFile file(QFINDTESTDATA("../../../app/resources/terminal/index.html"));
+    QVERIFY(file.open(QIODevice::ReadOnly | QIODevice::Text));
+    const QByteArray html = file.readAll();
+    QVERIFY(html.contains("style-src 'self' qrc: 'unsafe-inline'"));
+    QVERIFY(!html.contains("script-src 'unsafe-inline'"));
 }
 
 void DeveloperTerminalTest::terminalPanel_startsLazyWithSessionControls()
