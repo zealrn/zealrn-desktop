@@ -17,6 +17,7 @@ class SessionTest : public QObject
 
 private slots:
     void initTestCase();
+    void defaultFilePath_usesZealrnIdentity();
     void loadMissingFile_usesDefaults();
     void saveThenLoad_roundTrip();
     void loadCorruptFile_usesDefaults();
@@ -31,6 +32,13 @@ void SessionTest::initTestCase()
     QStandardPaths::setTestModeEnabled(true);
     QCoreApplication::setOrganizationName(QStringLiteral("ZealTest"));
     QCoreApplication::setApplicationName(QStringLiteral("ZealTest"));
+}
+
+void SessionTest::defaultFilePath_usesZealrnIdentity()
+{
+    const QString path = QDir::cleanPath(Session::defaultFilePath());
+    QVERIFY(path.endsWith(QStringLiteral("/.qttest/zealrn/session.toml")));
+    QVERIFY(!path.contains(QStringLiteral("/.qttest/zeal/")));
 }
 
 void SessionTest::loadMissingFile_usesDefaults()

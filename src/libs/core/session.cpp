@@ -56,10 +56,10 @@ QString Session::defaultFilePath()
 #ifdef PORTABLE_BUILD
     return QCoreApplication::applicationDirPath() + QLatin1String("/session.toml");
 #else
-    // Test mode: isolate test runs under ~/.qttest/zeal/, mirroring how
+    // Test mode: isolate test runs under ~/.qttest/zealrn/, mirroring how
     // QStandardPaths handles its own path categories in test mode.
     if (QStandardPaths::isTestModeEnabled()) {
-        return QDir::homePath() + QLatin1String("/.qttest/zeal/session.toml");
+        return QDir::homePath() + QLatin1String("/.qttest/zealrn/session.toml");
     }
 
     // Compute the canonical platform path directly rather than via
@@ -72,14 +72,14 @@ QString Session::defaultFilePath()
     if (base.isEmpty()) {
         base = QDir::homePath() + QLatin1String("/AppData/Local");
     }
-    return base + QLatin1String("/Zeal/session.toml");
+    return base + QLatin1String("/ZealRN/session.toml");
 #elif defined(Q_OS_MACOS)
-    return QDir::homePath() + QLatin1String("/Library/Application Support/Zeal/session.toml");
+    return QDir::homePath() + QLatin1String("/Library/Application Support/ZealRN/session.toml");
 #else
     const QByteArray xdgState = qgetenv("XDG_STATE_HOME");
     const QString base = xdgState.isEmpty() ? QDir::homePath() + QLatin1String("/.local/state")
                                             : QString::fromLocal8Bit(xdgState);
-    return base + QLatin1String("/zeal/session.toml");
+    return base + QLatin1String("/zealrn/session.toml");
 #endif
 #endif
 }
@@ -200,7 +200,7 @@ bool Session::saveToFile(const QString &path) const
     root.insert_or_assign(ArrayWindows, std::move(windowsArray));
 
     std::ostringstream oss;
-    oss << "# Managed by Zeal. Do not edit manually.\n\n";
+    oss << "# Managed by ZealRN. Do not edit manually.\n\n";
     oss << root;
     const std::string text = oss.str();
 
