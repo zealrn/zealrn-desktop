@@ -187,7 +187,7 @@ void DeveloperTerminalTest::backendFactory_matchesBuildConfiguration()
 {
     const auto backend = Zeal::WidgetUi::createTerminalBackend();
     QVERIFY(backend);
-#ifdef ZEALRN_HAVE_POSIX_PTY
+#if defined(ZEALRN_HAVE_POSIX_PTY) || defined(ZEALRN_HAVE_CONPTY)
     QVERIFY(backend->isAvailable());
 #else
     QVERIFY(!backend->isAvailable());

@@ -19,6 +19,13 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set_tests_properties(posixptybackend_test PROPERTIES TIMEOUT 15)
 endif()
 
+if(WIN32)
+    add_executable(windowsterminalbackend_test windowsterminalbackend_test.cpp)
+    target_link_libraries(windowsterminalbackend_test PRIVATE Ui Core Qt6::Test)
+    zeal_add_test(windowsterminalbackend_test)
+    set_tests_properties(windowsterminalbackend_test PROPERTIES TIMEOUT 45)
+endif()
+
 add_executable(learningnotesstore_test learningnotesstore_test.cpp)
 target_link_libraries(learningnotesstore_test PRIVATE Ui Qt6::Sql Qt6::Test)
 
