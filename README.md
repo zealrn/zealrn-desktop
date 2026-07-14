@@ -16,7 +16,7 @@ It is based on [Zeal](https://github.com/zealdocs/zeal) and keeps Zeal's fast of
 - Back up the local SQLite notes database.
 - Experiment with HTML, CSS, and JavaScript in an isolated, network-blocked preview.
 - Use System, Light, or Dark appearance.
-- Open an external developer terminal; embedded QTermWidget is used when available at build time.
+- Use an embedded developer terminal powered by bundled xterm.js with a native Linux PTY or Windows ConPTY backend.
 
 ## Install
 
@@ -69,6 +69,8 @@ Open a real docset page, write in **Learning Notes**, and use **Save Note** or `
 
 **All Notes** searches page title, docset, relative path, and content. Export actions never overwrite a file without confirmation. PDF exports contain selectable/searchable text rather than screenshots.
 
+The editor includes Markdown formatting, Edit/Preview modes, note-local search, zoom and line-wrap preferences, and reversible Expand and Focus modes. These presentation settings do not change stored note text or the SQLite schema.
+
 ## Web Playground
 
 The Web Playground bundles CodeMirror locally and requires no network, Node.js, or npm at runtime. Its internal preview blocks external `http`, `https`, `ftp`, `ws`, and `wss` requests.
@@ -105,6 +107,14 @@ npm ci
 npm run bundle
 ```
 
+The terminal frontend is also bundled locally. Node.js is only needed to regenerate its xterm.js assets:
+
+```bash
+cd tools/terminal-frontend
+npm ci
+npm run bundle
+```
+
 Do not commit `node_modules` or generated release artifacts.
 
 ## Known Limitations
@@ -112,12 +122,12 @@ Do not commit `node_modules` or generated release artifacts.
 - This is an alpha release with one main note per documentation page.
 - Notes are local only; there are no accounts, sync, sharing, or cloud services.
 - AppImage targets a normal x86_64 Linux desktop and expects baseline system libraries such as glibc and XCB.
-- The packaged terminal uses the external-terminal fallback because QTermWidget was unavailable in the validation build.
+- The embedded terminal has normal user-shell access and is not sandboxed. Use the external-terminal action when a native backend is unavailable.
 - On Qt 6.4-6.6, changing appearance may require restarting ZealRN before downloaded documentation pages change theme.
-- Windows embedded ConPTY and Windows packaging remain future work.
+- Windows packages are unsigned alpha builds; SmartScreen may warn until code signing is configured.
 
 ## License And Attribution
 
 ZealRN is licensed under the GNU General Public License version 3 or later. See [COPYING](COPYING).
 
-ZealRN is a fork of Zeal and retains upstream copyright and attribution. Docsets are provided through the Zeal/Dash ecosystem. Bundled third-party license notices are in [LICENSES](LICENSES) and [tools/playground/THIRD_PARTY_LICENSES.md](tools/playground/THIRD_PARTY_LICENSES.md).
+ZealRN is a fork of Zeal and retains upstream copyright and attribution. Docsets are provided through the Zeal/Dash ecosystem. Bundled third-party license notices are in [LICENSES](LICENSES), [tools/playground/THIRD_PARTY_LICENSES.md](tools/playground/THIRD_PARTY_LICENSES.md), and [tools/terminal-frontend/THIRD_PARTY_LICENSES.md](tools/terminal-frontend/THIRD_PARTY_LICENSES.md).
