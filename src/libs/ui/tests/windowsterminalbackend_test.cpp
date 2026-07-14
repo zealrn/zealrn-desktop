@@ -11,6 +11,8 @@
 #include <QTemporaryDir>
 #include <QTest>
 
+#include <cstdio>
+
 #include <windows.h>
 
 using namespace Zeal::WidgetUi;
@@ -57,8 +59,12 @@ void WindowsTerminalBackendTest::runsCmdWithWorkingDirectoryAndExitCode()
                            directory.path(),
                            QSize(90, 30)));
     QTRY_VERIFY_WITH_TIMEOUT(!output.isEmpty(), 5000);
+    std::fprintf(stderr, "[conpty-test] initial output observed\n");
+    std::fflush(stderr);
     backend->write(QByteArrayLiteral("echo ZEALRN_CONPTY\rcd\rexit /b 7\r"));
     QTRY_COMPARE_WITH_TIMEOUT(exited.count(), 1, 10000);
+    std::fprintf(stderr, "[conpty-test] process exit observed\n");
+    std::fflush(stderr);
 
     QTRY_VERIFY_WITH_TIMEOUT(output.contains("ZEALRN_CONPTY"), 3000);
     QTRY_VERIFY_WITH_TIMEOUT(output.toLower().contains(QDir::toNativeSeparators(directory.path()).toUtf8().toLower()),
@@ -84,6 +90,8 @@ void WindowsTerminalBackendTest::resizesAndInterruptsCmd()
     QCOMPARE(errors.count(), 0);
 
     QTRY_VERIFY_WITH_TIMEOUT(!output.isEmpty(), 5000);
+    std::fprintf(stderr, "[conpty-test] resize initial output observed\n");
+    std::fflush(stderr);
     backend->write(QByteArrayLiteral("ping -t 127.0.0.1\r"));
     QTRY_VERIFY_WITH_TIMEOUT(output.toLower().contains("reply from"), 5000);
     backend->interrupt();
@@ -120,6 +128,8 @@ void WindowsTerminalBackendTest::preservesPowerShellUnicode()
 
     QVERIFY(backend->start(profile, QDir::homePath(), QSize(80, 24)));
     QTRY_COMPARE_WITH_TIMEOUT(exited.count(), 1, 10000);
+    std::fprintf(stderr, "[conpty-test] PowerShell exit observed\n");
+    std::fflush(stderr);
     QTRY_VERIFY_WITH_TIMEOUT(output.contains(expected.toUtf8()), 3000);
 }
 
@@ -185,6 +195,8 @@ void WindowsTerminalBackendTest::destructionWithPendingOutputDoesNotDeadlock()
                            QDir::homePath(),
                            QSize(80, 24)));
     QTRY_VERIFY_WITH_TIMEOUT(!output.isEmpty(), 5000);
+    std::fprintf(stderr, "[conpty-test] pending-output prompt observed\n");
+    std::fflush(stderr);
     backend->write(QByteArrayLiteral("for /L %i in (1,1,10000) do @echo ZEALRN_PENDING_%i\r"));
     QTRY_VERIFY_WITH_TIMEOUT(output.contains("ZEALRN_PENDING_1"), 3000);
 
