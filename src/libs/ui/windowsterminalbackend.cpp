@@ -354,14 +354,25 @@ private:
 
     void closePseudoConsole()
     {
-        HPCON pseudoConsole = nullptr;
-        {
-            std::lock_guard lock(m_pseudoConsoleMutex);
-            pseudoConsole = std::exchange(m_pseudoConsole, nullptr);
-        }
+        const HPCON pseudoConsole = takePseudoConsole();
         if (pseudoConsole) {
             m_api.close(pseudoConsole);
         }
+    }
+
+    void closePseudoConsoleAsync()
+    {
+        const HPCON pseudoConsole = takePseudoConsole();
+        const auto close = m_api.close;
+        if (pseudoConsole) {
+            std::thread([close, pseudoConsole]() { close(pseudoConsole); }).detach();
+        }
+    }
+
+    HPCON takePseudoConsole()
+    {
+        std::lock_guard lock(m_pseudoConsoleMutex);
+        return std::exchange(m_pseudoConsole, nullptr);
     }
 
     void shutdown(bool notify)
@@ -382,11 +393,11 @@ private:
         if (m_processWatcher.joinable()) {
             m_processWatcher.join();
         }
-        // Pre-24H2 ClosePseudoConsole can wait indefinitely unless its output pipe is closed or drained.
         stopIoThreads();
-        closePseudoConsole();
         closeHandle(m_process);
         closeHandle(m_job);
+        // Pre-24H2 ClosePseudoConsole can wait indefinitely even after the client process exits.
+        closePseudoConsoleAsync();
         if (notify) {
             emit exited(exitCode, true);
         }
