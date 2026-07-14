@@ -8,6 +8,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QMetaObject>
+#include <QWinEventNotifier>
 
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -225,19 +226,11 @@ public:
         CloseHandle(process.hThread);
 
         startIoThreads();
-        const HANDLE watchedProcess = m_process;
-        m_processWatcher = std::thread([this, watchedProcess]() {
-            WaitForSingleObject(watchedProcess, INFINITE);
+        m_processNotifier = new QWinEventNotifier(m_process, this);
+        connect(m_processNotifier, &QWinEventNotifier::activated, this, [this]() {
             DWORD exitCode = 0;
-            GetExitCodeProcess(watchedProcess, &exitCode);
-            QMetaObject::invokeMethod(
-                this,
-                [this, watchedProcess, exitCode]() {
-                    if (m_process == watchedProcess) {
-                        finish(static_cast<int>(exitCode), true);
-                    }
-                },
-                Qt::QueuedConnection);
+            GetExitCodeProcess(m_process, &exitCode);
+            finish(static_cast<int>(exitCode), true);
         });
         emit started(profile);
         return true;
@@ -345,6 +338,16 @@ private:
                     const DWORD remaining = static_cast<DWORD>(
                         std::min<qsizetype>(data.size() - offset, std::numeric_limits<DWORD>::max()));
                     if (!WriteFile(input, data.constData() + offset, remaining, &written, nullptr)) {
+                        const DWORD error = GetLastError();
+                        if (!m_stopIo) {
+                            QMetaObject::invokeMethod(
+                                this,
+                                [this, error]() {
+                                    emit errorOccurred(
+                                        tr("Could not send terminal input: %1").arg(windowsErrorMessage(error)));
+                                },
+                                Qt::QueuedConnection);
+                        }
                         return;
                     }
                     offset += written;
@@ -388,15 +391,6 @@ private:
         }
     }
 
-    void closePseudoConsoleAsync()
-    {
-        const HPCON pseudoConsole = takePseudoConsole();
-        const auto close = m_api.close;
-        if (pseudoConsole) {
-            std::thread([close, pseudoConsole]() { close(pseudoConsole); }).detach();
-        }
-    }
-
     HPCON takePseudoConsole()
     {
         std::lock_guard lock(m_pseudoConsoleMutex);
@@ -418,14 +412,14 @@ private:
 
     void finish(int exitCode, bool notify)
     {
-        if (m_processWatcher.joinable()) {
-            m_processWatcher.join();
+        if (m_processNotifier) {
+            delete m_processNotifier;
+            m_processNotifier = nullptr;
         }
         stopIoThreads();
         closeHandle(m_process);
         closeHandle(m_job);
-        // Pre-24H2 ClosePseudoConsole can wait indefinitely even after the client process exits.
-        closePseudoConsoleAsync();
+        closePseudoConsole();
         if (notify) {
             emit exited(exitCode, true);
         }
@@ -438,7 +432,7 @@ private:
     HANDLE m_outputRead = nullptr;
     HANDLE m_process = nullptr;
     HANDLE m_job = nullptr;
-    std::thread m_processWatcher;
+    QWinEventNotifier *m_processNotifier = nullptr;
     std::thread m_reader;
     std::thread m_writer;
     std::atomic_bool m_stopIo = true;

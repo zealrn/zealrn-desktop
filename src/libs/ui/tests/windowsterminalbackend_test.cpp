@@ -56,6 +56,7 @@ void WindowsTerminalBackendTest::runsCmdWithWorkingDirectoryAndExitCode()
     QVERIFY(backend->start(cmdProfile({QStringLiteral("/D"), QStringLiteral("/Q")}),
                            directory.path(),
                            QSize(90, 30)));
+    QTRY_VERIFY_WITH_TIMEOUT(!output.isEmpty(), 5000);
     backend->write(QByteArrayLiteral("echo ZEALRN_CONPTY\rcd\rexit /b 7\r"));
     QTRY_COMPARE_WITH_TIMEOUT(exited.count(), 1, 10000);
 
@@ -82,6 +83,7 @@ void WindowsTerminalBackendTest::resizesAndInterruptsCmd()
     backend->resize(QSize(100, 35));
     QCOMPARE(errors.count(), 0);
 
+    QTRY_VERIFY_WITH_TIMEOUT(!output.isEmpty(), 5000);
     backend->write(QByteArrayLiteral("ping -t 127.0.0.1\r"));
     QTRY_VERIFY_WITH_TIMEOUT(output.toLower().contains("reply from"), 5000);
     backend->interrupt();
@@ -182,6 +184,7 @@ void WindowsTerminalBackendTest::destructionWithPendingOutputDoesNotDeadlock()
     QVERIFY(backend->start(cmdProfile({QStringLiteral("/D"), QStringLiteral("/Q")}),
                            QDir::homePath(),
                            QSize(80, 24)));
+    QTRY_VERIFY_WITH_TIMEOUT(!output.isEmpty(), 5000);
     backend->write(QByteArrayLiteral("for /L %i in (1,1,10000) do @echo ZEALRN_PENDING_%i\r"));
     QTRY_VERIFY_WITH_TIMEOUT(output.contains("ZEALRN_PENDING_1"), 3000);
 
