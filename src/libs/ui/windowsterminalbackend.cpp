@@ -212,7 +212,6 @@ public:
             WaitForSingleObject(watchedProcess, INFINITE);
             DWORD exitCode = 0;
             GetExitCodeProcess(watchedProcess, &exitCode);
-            closePseudoConsole();
             QMetaObject::invokeMethod(
                 this,
                 [this, watchedProcess, exitCode]() {
@@ -383,8 +382,9 @@ private:
         if (m_processWatcher.joinable()) {
             m_processWatcher.join();
         }
-        closePseudoConsole();
+        // Pre-24H2 ClosePseudoConsole can wait indefinitely unless its output pipe is closed or drained.
         stopIoThreads();
+        closePseudoConsole();
         closeHandle(m_process);
         closeHandle(m_job);
         if (notify) {
