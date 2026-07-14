@@ -311,22 +311,15 @@ private:
             std::fflush(stderr);
             char buffer[16384];
             while (!m_stopIo) {
-                DWORD available = 0;
-                if (!PeekNamedPipe(output, nullptr, 0, nullptr, &available, nullptr)) {
-                    std::fprintf(stderr, "[conpty] PeekNamedPipe failed: %lu\n", GetLastError());
-                    std::fflush(stderr);
+                DWORD count = 0;
+                if (!ReadFile(output, buffer, sizeof(buffer), &count, nullptr)) {
+                    if (!m_stopIo) {
+                        std::fprintf(stderr, "[conpty] ReadFile failed: %lu\n", GetLastError());
+                        std::fflush(stderr);
+                    }
                     return;
                 }
-                if (available == 0) {
-                    // ponytail: polling avoids uncancellable reads; use overlapped pipes if idle wakeups matter.
-                    Sleep(5);
-                    continue;
-                }
-                DWORD count = 0;
-                const DWORD requested = std::min<DWORD>(available, sizeof(buffer));
-                if (!ReadFile(output, buffer, requested, &count, nullptr)) {
-                    std::fprintf(stderr, "[conpty] ReadFile failed: %lu\n", GetLastError());
-                    std::fflush(stderr);
+                if (count == 0) {
                     return;
                 }
                 const QByteArray data(buffer, static_cast<qsizetype>(count));
