@@ -285,7 +285,7 @@ private:
         m_reader = std::thread([this, output]() {
             char buffer[16384];
             DWORD count = 0;
-            while (ReadFile(output, buffer, sizeof(buffer), &count, nullptr)) {
+            while (!m_stopIo && ReadFile(output, buffer, sizeof(buffer), &count, nullptr)) {
                 if (count == 0) {
                     continue;
                 }

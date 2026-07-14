@@ -56,7 +56,7 @@ void WindowsTerminalBackendTest::runsCmdWithWorkingDirectoryAndExitCode()
     QVERIFY(backend->start(cmdProfile({QStringLiteral("/D"), QStringLiteral("/Q")}),
                            directory.path(),
                            QSize(90, 30)));
-    backend->write(QByteArrayLiteral("echo ZEALRN_CONPTY\r\ncd\r\nexit /b 7\r\n"));
+    backend->write(QByteArrayLiteral("echo ZEALRN_CONPTY\rcd\rexit /b 7\r"));
     QTRY_COMPARE_WITH_TIMEOUT(exited.count(), 1, 10000);
 
     QTRY_VERIFY_WITH_TIMEOUT(output.contains("ZEALRN_CONPTY"), 3000);
@@ -82,11 +82,11 @@ void WindowsTerminalBackendTest::resizesAndInterruptsCmd()
     backend->resize(QSize(100, 35));
     QCOMPARE(errors.count(), 0);
 
-    backend->write(QByteArrayLiteral("ping -t 127.0.0.1\r\n"));
+    backend->write(QByteArrayLiteral("ping -t 127.0.0.1\r"));
     QTRY_VERIFY_WITH_TIMEOUT(output.toLower().contains("reply from"), 5000);
     backend->interrupt();
     QTest::qWait(250);
-    backend->write(QByteArrayLiteral("echo INTERRUPTED\r\nexit /b 0\r\n"));
+    backend->write(QByteArrayLiteral("echo INTERRUPTED\rexit /b 0\r"));
 
     QTRY_COMPARE_WITH_TIMEOUT(exited.count(), 1, 10000);
     QVERIFY(output.contains("INTERRUPTED"));
@@ -111,7 +111,10 @@ void WindowsTerminalBackendTest::preservesPowerShellUnicode()
                                      {QStringLiteral("-NoLogo"),
                                       QStringLiteral("-NoProfile"),
                                       QStringLiteral("-EncodedCommand"),
-                                      encodedPowerShellCommand(QStringLiteral("Write-Output '%1'").arg(expected))}};
+                                      encodedPowerShellCommand(
+                                          QStringLiteral("[Console]::OutputEncoding = [Text.UTF8Encoding]::new(); "
+                                                         "Write-Output '%1'")
+                                              .arg(expected))}};
 
     QVERIFY(backend->start(profile, QDir::homePath(), QSize(80, 24)));
     QTRY_COMPARE_WITH_TIMEOUT(exited.count(), 1, 10000);
@@ -179,7 +182,7 @@ void WindowsTerminalBackendTest::destructionWithPendingOutputDoesNotDeadlock()
     QVERIFY(backend->start(cmdProfile({QStringLiteral("/D"), QStringLiteral("/Q")}),
                            QDir::homePath(),
                            QSize(80, 24)));
-    backend->write(QByteArrayLiteral("for /L %i in (1,1,10000) do @echo ZEALRN_PENDING_%i\r\n"));
+    backend->write(QByteArrayLiteral("for /L %i in (1,1,10000) do @echo ZEALRN_PENDING_%i\r"));
     QTRY_VERIFY_WITH_TIMEOUT(output.contains("ZEALRN_PENDING_1"), 3000);
 
     QElapsedTimer timer;
