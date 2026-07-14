@@ -307,10 +307,14 @@ private:
         m_stopIo = false;
         const HANDLE output = m_outputRead;
         m_reader = std::thread([this, output]() {
+            std::fprintf(stderr, "[conpty] reader started\n");
+            std::fflush(stderr);
             char buffer[16384];
             while (!m_stopIo) {
                 DWORD available = 0;
                 if (!PeekNamedPipe(output, nullptr, 0, nullptr, &available, nullptr)) {
+                    std::fprintf(stderr, "[conpty] PeekNamedPipe failed: %lu\n", GetLastError());
+                    std::fflush(stderr);
                     return;
                 }
                 if (available == 0) {
@@ -321,10 +325,20 @@ private:
                 DWORD count = 0;
                 const DWORD requested = std::min<DWORD>(available, sizeof(buffer));
                 if (!ReadFile(output, buffer, requested, &count, nullptr)) {
+                    std::fprintf(stderr, "[conpty] ReadFile failed: %lu\n", GetLastError());
+                    std::fflush(stderr);
                     return;
                 }
                 const QByteArray data(buffer, static_cast<qsizetype>(count));
-                QMetaObject::invokeMethod(this, [this, data]() { emit outputReceived(data); }, Qt::QueuedConnection);
+                const bool queued = QMetaObject::invokeMethod(
+                    this,
+                    [this, data]() { emit outputReceived(data); },
+                    Qt::QueuedConnection);
+                std::fprintf(stderr,
+                             "[conpty] read: %lu bytes; signal queued: %d\n",
+                             count,
+                             queued ? 1 : 0);
+                std::fflush(stderr);
             }
         });
 
