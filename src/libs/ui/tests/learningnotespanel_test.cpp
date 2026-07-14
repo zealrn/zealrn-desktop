@@ -25,6 +25,8 @@ class LearningNotesPanelTest : public QObject
 
 private slots:
     void pageChange_loadsMatchingNote();
+    void startNote_isWritableAndPersists();
+    void startNote_switchesWithoutContentCrossover();
     void edit_autosavesAndUpdatesStatus();
     void pageChange_flushesPendingEdit();
     void selection_appendsBlockquoteOnce();
@@ -44,6 +46,42 @@ static LearningNotePage page(const QString &path)
             .pagePath = path,
             .pageUrl = QStringLiteral("http://localhost/Qt_6/") + path,
             .pageTitle = path};
+}
+
+void LearningNotesPanelTest::startNote_isWritableAndPersists()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString databasePath = dir.filePath(QStringLiteral("notes.sqlite"));
+    LearningNotesPanel panel(databasePath);
+    auto *editor = panel.findChild<QPlainTextEdit *>(QStringLiteral("noteEditor"));
+    auto *status = panel.findChild<QLabel *>(QStringLiteral("noteStatus"));
+
+    QVERIFY(editor->isEnabled());
+    QVERIFY(panel.currentPage().isStartNote());
+    editor->setPlainText(QStringLiteral("Learn one useful thing."));
+    QTRY_COMPARE_WITH_TIMEOUT(status->text(), QStringLiteral("Saved"), 1500);
+
+    LearningNotesStore store(databasePath);
+    const auto saved = store.note(QStringLiteral("__zealrn_system__"), QStringLiteral("start-note"));
+    QVERIFY(saved.has_value());
+    QCOMPARE(saved->content, QStringLiteral("Learn one useful thing."));
+}
+
+void LearningNotesPanelTest::startNote_switchesWithoutContentCrossover()
+{
+    QTemporaryDir dir;
+    const QString databasePath = dir.filePath(QStringLiteral("notes.sqlite"));
+    LearningNotesPanel panel(databasePath);
+    auto *editor = panel.findChild<QPlainTextEdit *>(QStringLiteral("noteEditor"));
+
+    editor->setPlainText(QStringLiteral("Start content"));
+    QVERIFY(panel.setPage(page(QStringLiteral("page.html"))));
+    editor->setPlainText(QStringLiteral("Page content"));
+    QVERIFY(panel.showStartNote());
+    QCOMPARE(editor->toPlainText(), QStringLiteral("Start content"));
+    QVERIFY(panel.setPage(page(QStringLiteral("page.html"))));
+    QCOMPARE(editor->toPlainText(), QStringLiteral("Page content"));
 }
 
 void LearningNotesPanelTest::pageChange_loadsMatchingNote()

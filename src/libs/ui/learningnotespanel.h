@@ -40,6 +40,8 @@ public:
     ~LearningNotesPanel() override;
 
     bool setPage(const LearningNotePage &page);
+    bool showStartNote();
+    const LearningNotePage &currentPage() const;
     bool flush();
     void appendSelection(const QString &selection);
     void exitFocusMode();
@@ -50,6 +52,7 @@ signals:
     void openDocumentationRequested(const LearningNotePage &page);
     void expandedModeRequested(bool expanded);
     void focusModeRequested(bool focused);
+    void noteSaved(const LearningNotePage &page);
 
 private:
     void setupUi();
@@ -64,6 +67,7 @@ private:
     void exportNote(const LearningNote &note, LearningNotesExport::Format format);
     void exportAllNotes();
     void backupDatabase();
+    void clearCurrentNote();
     void setStatus(const QString &status);
 
     std::unique_ptr<LearningNotesStore> m_store;
@@ -82,6 +86,7 @@ private:
     QTabWidget *m_modeTabs = nullptr;
     QPushButton *m_saveButton = nullptr;
     QPushButton *m_addSelectionButton = nullptr;
+    QPushButton *m_clearButton = nullptr;
     QToolButton *m_exportButton = nullptr;
     QTimer *m_autoSaveTimer = nullptr;
     QTimer *m_previewTimer = nullptr;

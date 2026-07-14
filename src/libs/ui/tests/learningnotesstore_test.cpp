@@ -17,6 +17,7 @@ class LearningNotesStoreTest : public QObject
 private slots:
     void pageIdentity_ignoresServerAndAnchor();
     void pageIdentity_keepsDocsetsSeparate();
+    void startNote_hasReservedIdentity();
     void store_createsVersionedDatabase();
     void store_rollsBackFailedMigration();
     void store_savesLoadsSearchesAndDeletesUnicodeNote();
@@ -59,6 +60,35 @@ void LearningNotesStoreTest::pageIdentity_keepsDocsetsSeparate()
 
     QCOMPARE(one.pageKey, two.pageKey);
     QVERIFY(one.docsetId != two.docsetId);
+}
+
+void LearningNotesStoreTest::startNote_hasReservedIdentity()
+{
+    const LearningNotePage start = LearningNotePage::startNote();
+
+    QVERIFY(start.isValid());
+    QVERIFY(start.isStartNote());
+    QCOMPARE(start.docsetId, QStringLiteral("__zealrn_system__"));
+    QCOMPARE(start.pageKey, QStringLiteral("start-note"));
+    QVERIFY(start.pageUrl.isEmpty());
+    QVERIFY(start.pagePath.isEmpty());
+
+    QTemporaryDir dir;
+    LearningNotesStore store(dir.filePath(QStringLiteral("notes.sqlite")));
+    LearningNote startNote;
+    startNote.page = start;
+    startNote.content = QStringLiteral("Start");
+    LearningNote docsetNote;
+    docsetNote.page = {.docsetId = QStringLiteral("Docs"),
+                       .docsetName = QStringLiteral("Docs"),
+                       .pageKey = QStringLiteral("start-note"),
+                       .pagePath = QStringLiteral("start-note"),
+                       .pageUrl = QStringLiteral(""),
+                       .pageTitle = QStringLiteral("A documentation page")};
+    docsetNote.content = QStringLiteral("Docs");
+    QVERIFY(store.save(&startNote));
+    QVERIFY(store.save(&docsetNote));
+    QCOMPARE(store.search().size(), 2);
 }
 
 void LearningNotesStoreTest::store_createsVersionedDatabase()

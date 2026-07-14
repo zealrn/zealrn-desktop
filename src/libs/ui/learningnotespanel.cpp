@@ -121,6 +121,12 @@ void LearningNotesPanel::setupUi()
     titleLayout->addWidget(title);
     titleLayout->addStretch();
 
+    auto *startNoteButton = new QToolButton(this);
+    startNoteButton->setObjectName(QStringLiteral("startNoteButton"));
+    startNoteButton->setText(tr("Start Note"));
+    startNoteButton->setToolTip(tr("Open the note that is always available"));
+    titleLayout->addWidget(startNoteButton);
+
     auto *expandAction = new QAction(tr("Expand Notes"), this);
     m_expandAction = expandAction;
     expandAction->setObjectName(QStringLiteral("noteExpandAction"));
@@ -316,6 +322,9 @@ void LearningNotesPanel::setupUi()
         QCoreApplication::translate("LearningNotesPanel", "Add Selection"), this);
     buttonLayout->addWidget(m_addSelectionButton, 0, 1);
 
+    m_clearButton = new QPushButton(tr("Clear"), this);
+    buttonLayout->addWidget(m_clearButton, 0, 2);
+
     auto *allNotesButton = new QPushButton(QCoreApplication::translate("LearningNotesPanel", "All Notes"), this);
     buttonLayout->addWidget(allNotesButton, 1, 0);
 
@@ -363,6 +372,8 @@ void LearningNotesPanel::setupUi()
     connect(m_editor, &QPlainTextEdit::selectionChanged, this, &LearningNotesPanel::updateCounts);
     connect(m_autoSaveTimer, &QTimer::timeout, this, [this]() { save(false); });
     connect(m_saveButton, &QPushButton::clicked, this, [this]() { save(true); });
+    connect(m_clearButton, &QPushButton::clicked, this, &LearningNotesPanel::clearCurrentNote);
+    connect(startNoteButton, &QToolButton::clicked, this, [this]() { showStartNote(); });
     connect(m_addSelectionButton, &QPushButton::clicked, this, &LearningNotesPanel::addSelectionRequested);
     connect(allNotesButton, &QPushButton::clicked, this, &LearningNotesPanel::showAllNotes);
     connect(m_previewTimer, &QTimer::timeout, this, &LearningNotesPanel::updatePreview);
@@ -435,7 +446,7 @@ void LearningNotesPanel::setupUi()
     setZoom(m_settings ? m_settings->learningNotesZoom : 115);
     updateCounts();
 
-    setPage({});
+    showStartNote();
 }
 
 void LearningNotesPanel::applyFormat(int action)
@@ -563,15 +574,19 @@ bool LearningNotesPanel::setPage(const LearningNotePage &page)
     m_dirty = false;
 
     const bool valid = page.isValid();
+    const bool startNote = page.isStartNote();
     m_editor->setEnabled(valid);
     m_modeTabs->setEnabled(valid);
     m_saveButton->setEnabled(valid);
-    m_addSelectionButton->setEnabled(valid);
+    m_addSelectionButton->setEnabled(valid && !startNote);
+    m_clearButton->setEnabled(valid);
     m_exportButton->setEnabled(true);
-    m_docsetLabel->setText(valid ? page.docsetName : QString());
+    m_docsetLabel->setText(startNote ? tr("Always available") : valid ? page.docsetName : QString());
     m_pageLabel->setText(valid ? page.pageTitle : QCoreApplication::translate(
                                                       "LearningNotesPanel", "No documentation page selected"));
-    m_pathLabel->setText(valid ? page.pagePath : QString());
+    m_pathLabel->setText(startNote ? tr("What are you learning today?") : valid ? page.pagePath : QString());
+    m_editor->setPlaceholderText(startNote ? tr("What are you learning today?")
+                                           : tr("Write what you learned from this documentation page…"));
     m_savedAtLabel->clear();
     if (!valid) {
         setStatus(QCoreApplication::translate("LearningNotesPanel", "No page"));
@@ -593,6 +608,16 @@ bool LearningNotesPanel::setPage(const LearningNotePage &page)
     }
     updatePreview();
     return true;
+}
+
+bool LearningNotesPanel::showStartNote()
+{
+    return setPage(LearningNotePage::startNote());
+}
+
+const LearningNotePage &LearningNotesPanel::currentPage() const
+{
+    return m_note.page;
 }
 
 bool LearningNotesPanel::flush()
@@ -638,7 +663,19 @@ bool LearningNotesPanel::save(bool explicitSave)
     m_editor->setToolTip({});
     setStatus(QCoreApplication::translate("LearningNotesPanel", "Saved"));
     m_savedAtLabel->setText(m_note.updatedAt.toLocalTime().toString(QStringLiteral("HH:mm")));
+    emit noteSaved(m_note.page);
     return true;
+}
+
+void LearningNotesPanel::clearCurrentNote()
+{
+    if (m_editor->toPlainText().isEmpty()) {
+        return;
+    }
+    if (QMessageBox::question(this, tr("Clear Note"), tr("Clear the current note?")) != QMessageBox::Yes) {
+        return;
+    }
+    m_editor->clear();
 }
 
 void LearningNotesPanel::showAllNotes()

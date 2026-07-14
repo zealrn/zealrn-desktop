@@ -20,6 +20,9 @@ struct LearningNotePage
     QString pageTitle;
 
     bool isValid() const { return !docsetId.isEmpty() && !pageKey.isEmpty(); }
+    bool isStartNote() const;
+
+    static LearningNotePage startNote();
 
     static LearningNotePage fromUrl(const QString &docsetId,
                                     const QString &docsetName,

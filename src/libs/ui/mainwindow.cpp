@@ -137,7 +137,9 @@ MainWindow::MainWindow(Core::Application *app, QWidget *parent)
             this,
             [this](const LearningNotePage &page) {
                 const Registry::Docset *docset = m_application->docsetRegistry()->docset(page.docsetId);
-                if (docset != nullptr) {
+                if (page.isStartNote()) {
+                    m_learningNotesPanel->showStartNote();
+                } else if (docset != nullptr) {
                     createTab(docset->baseUrl().resolved(QUrl(page.pagePath)));
                 }
             });
@@ -348,14 +350,14 @@ void MainWindow::syncLearningNotes()
 {
     const BrowserTab *tab = currentTab();
     if (tab == nullptr) {
-        m_learningNotesPanel->setPage({});
+        m_learningNotesPanel->showStartNote();
         return;
     }
 
     const QUrl url = tab->webControl()->url();
     const Registry::Docset *docset = m_application->docsetRegistry()->docsetForUrl(url);
     if (docset == nullptr) {
-        m_learningNotesPanel->setPage({});
+        m_learningNotesPanel->showStartNote();
         return;
     }
     m_learningNotesPanel->setPage(LearningNotePage::fromUrl(docset->name(),

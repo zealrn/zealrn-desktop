@@ -37,8 +37,25 @@ QString likePattern(QString text)
 
 constexpr auto SelectColumns = "id, docset_id, docset_name, page_key, page_path, page_url, page_title, "
                                "content, created_at, updated_at";
+constexpr auto StartNoteDocsetId = "__zealrn_system__";
+constexpr auto StartNotePageKey = "start-note";
 
 } // namespace
+
+bool LearningNotePage::isStartNote() const
+{
+    return docsetId == QLatin1String(StartNoteDocsetId) && pageKey == QLatin1String(StartNotePageKey);
+}
+
+LearningNotePage LearningNotePage::startNote()
+{
+    return {.docsetId = QLatin1String(StartNoteDocsetId),
+            .docsetName = QStringLiteral("ZealRN"),
+            .pageKey = QLatin1String(StartNotePageKey),
+            .pagePath = QStringLiteral(""),
+            .pageUrl = QStringLiteral(""),
+            .pageTitle = QStringLiteral("Start Note")};
+}
 
 LearningNotePage LearningNotePage::fromUrl(const QString &docsetId,
                                            const QString &docsetName,
