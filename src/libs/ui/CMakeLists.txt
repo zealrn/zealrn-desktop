@@ -15,6 +15,7 @@ add_library(Ui STATIC
     docsetcatalog.cpp
     docsetlistitemdelegate.cpp
     docsetsdialog.cpp
+    helpdialog.cpp
     learningnotespanel.cpp
     learningnotesmarkdown.cpp
     learningnotesexporter.cpp

@@ -36,6 +36,7 @@ class SearchQuery;
 namespace WidgetUi {
 
 class BrowserTab;
+class HelpDialog;
 class LearningNotesPanel;
 class SidebarViewProvider;
 
@@ -73,6 +74,7 @@ private:
     void setupShortcuts();
     void setupTabBar();
     void showQuickTour(bool manual = false);
+    void showHelp(int section);
     void showDevelopmentTool(int index);
     void updateDevelopmentActions();
     void setNotesExpanded(bool expanded);

@@ -43,6 +43,7 @@ public:
     bool showStartNote();
     const LearningNotePage &currentPage() const;
     bool flush();
+    int databaseSchemaVersion() const;
     void appendSelection(const QString &selection);
     void exitFocusMode();
     void exitExpandedMode();

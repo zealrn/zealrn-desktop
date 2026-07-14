@@ -8,6 +8,7 @@
 #include "browsertab.h"
 #include "docsetsdialog.h"
 #include "developerterminalpanel.h"
+#include "helpdialog.h"
 #include "learningnotespanel.h"
 #include "quicktourdialog.h"
 #include "searchsidebar.h"
@@ -712,9 +713,26 @@ void MainWindow::setupMainMenu()
 
     menu->addSeparator();
 
-    // -> Submit Feedback Action.
-    menu->addAction(tr("&Submit Feedback"), this, []() {
-        QDesktopServices::openUrl(QUrl(QStringLiteral("https://go.zealdocs.org/l/report-bug")));
+    menu->addAction(tr("&Getting Started"), this, [this]() {
+        showHelp(static_cast<int>(HelpDialog::Section::GettingStarted));
+    });
+    menu->addAction(tr("&Keyboard Shortcuts"), this, [this]() {
+        showHelp(static_cast<int>(HelpDialog::Section::KeyboardShortcuts));
+    });
+    menu->addAction(tr("&Notes and Backups"), this, [this]() {
+        showHelp(static_cast<int>(HelpDialog::Section::NotesAndBackups));
+    });
+    menu->addAction(tr("Web Playground Help"), this, [this]() {
+        showHelp(static_cast<int>(HelpDialog::Section::WebPlayground));
+    });
+    menu->addAction(tr("Developer Terminal Help"), this, [this]() {
+        showHelp(static_cast<int>(HelpDialog::Section::DeveloperTerminal));
+    });
+    menu->addAction(tr("Docset Library Help"), this, [this]() {
+        showHelp(static_cast<int>(HelpDialog::Section::DocsetLibrary));
+    });
+    menu->addAction(tr("&Report a Problem"), this, [this]() {
+        showHelp(static_cast<int>(HelpDialog::Section::ReportProblem));
     });
 
     // -> Check for Updates Action.
@@ -761,6 +779,23 @@ void MainWindow::showQuickTour(bool manual)
         m_settings->quickTourNextLaunch = true;
     }
     m_settings->save();
+}
+
+void MainWindow::showHelp(int section)
+{
+#ifdef ZEALRN_HAVE_POSIX_PTY
+    const QString terminalBackend = tr("POSIX PTY");
+#elif defined(Q_OS_WINDOWS)
+    const QString terminalBackend = tr("External Windows terminal");
+#else
+    const QString terminalBackend = tr("External terminal");
+#endif
+    HelpDialog dialog(static_cast<HelpDialog::Section>(section),
+                      terminalBackend,
+                      m_learningNotesPanel->databaseSchemaVersion(),
+                      m_application->docsetRegistry()->count(),
+                      this);
+    dialog.exec();
 }
 
 void MainWindow::showDevelopmentTool(int index)

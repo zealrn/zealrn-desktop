@@ -107,6 +107,11 @@ LearningNotesPanel::~LearningNotesPanel()
     flush();
 }
 
+int LearningNotesPanel::databaseSchemaVersion() const
+{
+    return m_store->schemaVersion();
+}
+
 void LearningNotesPanel::setupUi()
 {
     auto *layout = new QVBoxLayout(this);
