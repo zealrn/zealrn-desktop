@@ -30,6 +30,18 @@ namespace Zeal::WidgetUi {
 namespace {
 
 constexpr qsizetype MaxPendingInput = 4 * 1024 * 1024;
+constexpr DWORD MinimumConPtyBuild = 26100;
+
+DWORD currentWindowsBuild()
+{
+    using RtlGetVersionFunction = LONG(WINAPI *)(OSVERSIONINFOW *);
+    const HMODULE ntdll = GetModuleHandleW(L"ntdll.dll");
+    const auto rtlGetVersion = reinterpret_cast<RtlGetVersionFunction>(
+        GetProcAddress(ntdll, "RtlGetVersion"));
+    OSVERSIONINFOW version = {};
+    version.dwOSVersionInfoSize = sizeof(version);
+    return rtlGetVersion && rtlGetVersion(&version) == 0 ? version.dwBuildNumber : 0;
+}
 
 QString windowsErrorMessage(DWORD error)
 {
@@ -66,13 +78,16 @@ struct ConPtyApi
         create = reinterpret_cast<CreateFunction>(GetProcAddress(kernel, "CreatePseudoConsole"));
         resize = reinterpret_cast<ResizeFunction>(GetProcAddress(kernel, "ResizePseudoConsole"));
         close = reinterpret_cast<CloseFunction>(GetProcAddress(kernel, "ClosePseudoConsole"));
+        build = currentWindowsBuild();
     }
 
-    [[nodiscard]] bool isAvailable() const { return create && resize && close; }
+    [[nodiscard]] bool hasFunctions() const { return create && resize && close; }
+    [[nodiscard]] bool isAvailable() const { return hasFunctions() && build >= MinimumConPtyBuild; }
 
     CreateFunction create = nullptr;
     ResizeFunction resize = nullptr;
     CloseFunction close = nullptr;
+    DWORD build = 0;
 };
 
 class WindowsConPtyBackend final : public TerminalBackend
@@ -88,7 +103,10 @@ public:
     bool isAvailable() const override { return m_api.isAvailable(); }
     QString unavailableReason() const override
     {
-        return tr("Windows ConPTY is unavailable. Windows 10 version 1809 or later is required.");
+        if (!m_api.hasFunctions()) {
+            return tr("Windows ConPTY is unavailable. Use Open External Terminal.");
+        }
+        return tr("The embedded terminal requires Windows 11 version 24H2 or later. Use Open External Terminal.");
     }
     bool isRunning() const override { return m_process != nullptr; }
 
