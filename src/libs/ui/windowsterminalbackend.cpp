@@ -8,7 +8,6 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QMetaObject>
-#include <QWinEventNotifier>
 
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -144,8 +143,8 @@ public:
                 DeleteProcThreadAttributeList(attributes);
                 HeapFree(GetProcessHeap(), 0, attributes);
             }
-            closePseudoConsole();
             closeIoHandles();
+            closePseudoConsole();
             emit errorOccurred(tr("Could not prepare the terminal process: %1").arg(error));
             return false;
         }
@@ -174,25 +173,29 @@ public:
         DeleteProcThreadAttributeList(attributes);
         HeapFree(GetProcessHeap(), 0, attributes);
         if (!created) {
-            closePseudoConsole();
             closeIoHandles();
+            closePseudoConsole();
             emit errorOccurred(tr("Could not start the selected shell: %1").arg(windowsErrorMessage(createError)));
             return false;
         }
 
         m_process = process.hProcess;
         m_job = CreateJobObjectW(nullptr, nullptr);
-        if (m_job) {
-            JOBOBJECT_EXTENDED_LIMIT_INFORMATION limits = {};
-            limits.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
-            if (!SetInformationJobObject(m_job,
-                                         JobObjectExtendedLimitInformation,
-                                         &limits,
-                                         sizeof(limits))
-                || !AssignProcessToJobObject(m_job, m_process)) {
-                CloseHandle(m_job);
-                m_job = nullptr;
-            }
+        JOBOBJECT_EXTENDED_LIMIT_INFORMATION limits = {};
+        limits.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+        if (!m_job
+            || !SetInformationJobObject(m_job, JobObjectExtendedLimitInformation, &limits, sizeof(limits))
+            || !AssignProcessToJobObject(m_job, m_process)) {
+            const QString error = windowsErrorMessage(GetLastError());
+            TerminateProcess(m_process, 1);
+            WaitForSingleObject(m_process, 2000);
+            CloseHandle(process.hThread);
+            closeHandle(m_process);
+            closeHandle(m_job);
+            closeIoHandles();
+            closePseudoConsole();
+            emit errorOccurred(tr("Could not contain the terminal process tree: %1").arg(error));
+            return false;
         }
         if (ResumeThread(process.hThread) == DWORD(-1)) {
             const QString error = windowsErrorMessage(GetLastError());
@@ -204,11 +207,19 @@ public:
         CloseHandle(process.hThread);
 
         startIoThreads();
-        m_processNotifier = new QWinEventNotifier(m_process, this);
-        connect(m_processNotifier, &QWinEventNotifier::activated, this, [this]() {
+        const HANDLE watchedProcess = m_process;
+        m_processWatcher = std::thread([this, watchedProcess]() {
+            WaitForSingleObject(watchedProcess, INFINITE);
             DWORD exitCode = 0;
-            GetExitCodeProcess(m_process, &exitCode);
-            finish(static_cast<int>(exitCode), true);
+            GetExitCodeProcess(watchedProcess, &exitCode);
+            QMetaObject::invokeMethod(
+                this,
+                [this, watchedProcess, exitCode]() {
+                    if (m_process == watchedProcess) {
+                        finish(static_cast<int>(exitCode), true);
+                    }
+                },
+                Qt::QueuedConnection);
         });
         emit started(profile);
         return true;
@@ -317,21 +328,17 @@ private:
         if (m_writer.joinable()) {
             CancelSynchronousIo(m_writer.native_handle());
         }
-        closeHandle(m_inputWrite);
-
-        // ClosePseudoConsole can wait for pending output on Windows versions
-        // before 24H2, so keep the reader draining until the pseudoconsole exits.
-        closePseudoConsole();
         if (m_reader.joinable()) {
             CancelSynchronousIo(m_reader.native_handle());
-        }
-        closeHandle(m_outputRead);
-        if (m_reader.joinable()) {
-            m_reader.join();
         }
         if (m_writer.joinable()) {
             m_writer.join();
         }
+        if (m_reader.joinable()) {
+            m_reader.join();
+        }
+        closeIoHandles();
+        closePseudoConsole();
         std::lock_guard lock(m_writeMutex);
         m_pendingInput.clear();
     }
@@ -365,12 +372,10 @@ private:
 
     void finish(int exitCode, bool notify)
     {
-        if (m_processNotifier) {
-            m_processNotifier->setEnabled(false);
-            m_processNotifier->deleteLater();
-            m_processNotifier = nullptr;
-        }
         stopIoThreads();
+        if (m_processWatcher.joinable()) {
+            m_processWatcher.join();
+        }
         closeHandle(m_process);
         closeHandle(m_job);
         if (notify) {
@@ -384,7 +389,7 @@ private:
     HANDLE m_outputRead = nullptr;
     HANDLE m_process = nullptr;
     HANDLE m_job = nullptr;
-    QWinEventNotifier *m_processNotifier = nullptr;
+    std::thread m_processWatcher;
     std::thread m_reader;
     std::thread m_writer;
     std::atomic_bool m_stopIo = true;
