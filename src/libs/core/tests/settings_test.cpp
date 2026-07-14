@@ -221,6 +221,8 @@ void SettingsTest::gettingStartedSettingsRestoreAfterReopen()
         settings.quickTourNextLaunch = true;
         settings.openStartNoteOnLaunch = false;
         settings.openLastDocumentationOnLaunch = false;
+        settings.lastDocumentationDocsetId = QStringLiteral("Python_3");
+        settings.lastDocumentationPagePath = QStringLiteral("library/pathlib.html");
         settings.gettingStartedChecklist = 0x25;
         settings.gettingStartedChecklistDismissed = true;
         settings.dismissedHelpTips = {QStringLiteral("notes"), QStringLiteral("terminal")};
@@ -233,6 +235,8 @@ void SettingsTest::gettingStartedSettingsRestoreAfterReopen()
     QVERIFY(restored.quickTourNextLaunch);
     QVERIFY(!restored.openStartNoteOnLaunch);
     QVERIFY(!restored.openLastDocumentationOnLaunch);
+    QCOMPARE(restored.lastDocumentationDocsetId, QStringLiteral("Python_3"));
+    QCOMPARE(restored.lastDocumentationPagePath, QStringLiteral("library/pathlib.html"));
     QCOMPARE(restored.gettingStartedChecklist, quint32(0x25));
     QVERIFY(restored.gettingStartedChecklistDismissed);
     QCOMPARE(restored.dismissedHelpTips, QStringList({QStringLiteral("notes"), QStringLiteral("terminal")}));

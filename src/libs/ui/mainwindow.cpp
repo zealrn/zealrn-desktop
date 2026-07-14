@@ -34,6 +34,7 @@
 #include <QApplication>
 #include <QCloseEvent>
 #include <QDesktopServices>
+#include <QDir>
 #include <QDockWidget>
 #include <QFocusEvent>
 #include <QIcon>
@@ -219,7 +220,13 @@ MainWindow::MainWindow(Core::Application *app, QWidget *parent)
         }
     });
 
+    connect(m_application->docsetRegistry(),
+            &Registry::DocsetRegistry::docsetLoadingFinished,
+            this,
+            &MainWindow::restoreLastDocumentation);
+
     createTab();
+    QTimer::singleShot(0, this, &MainWindow::restoreLastDocumentation);
 
     connect(m_settings, &Core::Settings::updated, this, &MainWindow::applySettings);
     applySettings();
@@ -398,12 +405,51 @@ void MainWindow::syncLearningNotes()
         m_learningNotesPanel->showStartNote();
         return;
     }
-    m_learningNotesPanel->setPage(LearningNotePage::fromUrl(docset->name(),
-                                                           docset->title(),
-                                                           docset->baseUrl(),
-                                                           url,
-                                                           tab->webControl()->title()));
+    const LearningNotePage page = LearningNotePage::fromUrl(docset->name(),
+                                                            docset->title(),
+                                                            docset->baseUrl(),
+                                                            url,
+                                                            tab->webControl()->title());
+    m_learningNotesPanel->setPage(page);
+    if (page.isValid()
+        && (m_settings->lastDocumentationDocsetId != page.docsetId
+            || m_settings->lastDocumentationPagePath != page.pagePath)) {
+        m_settings->lastDocumentationDocsetId = page.docsetId;
+        m_settings->lastDocumentationPagePath = page.pagePath;
+        m_settings->save();
+    }
     completeGettingStartedItem(ChecklistDocumentationPage);
+}
+
+void MainWindow::restoreLastDocumentation()
+{
+    if (m_lastDocumentationRestoreAttempted || m_application->docsetRegistry()->isLoading()) {
+        return;
+    }
+    m_lastDocumentationRestoreAttempted = true;
+
+    if (!m_settings->openLastDocumentationOnLaunch || m_settings->lastDocumentationDocsetId.isEmpty()) {
+        return;
+    }
+
+    const QString pagePath = QDir::cleanPath(m_settings->lastDocumentationPagePath);
+    if (pagePath.isEmpty() || pagePath == QLatin1String(".") || pagePath.startsWith(QLatin1String("../"))) {
+        return;
+    }
+
+    const Registry::Docset *docset
+        = m_application->docsetRegistry()->docset(m_settings->lastDocumentationDocsetId);
+    if (docset == nullptr) {
+        return;
+    }
+
+    const QUrl url = docset->baseUrl().resolved(QUrl(pagePath));
+    if (BrowserTab *tab = currentTab()) {
+        tab->webControl()->load(url);
+        tab->webControl()->focus();
+    } else {
+        createTab(url);
+    }
 }
 
 void MainWindow::updateWindowTitle(const QString &pageTitle)

@@ -76,6 +76,7 @@ private:
     void showQuickTour(bool manual = false);
     void showHelp(int section);
     void showDevelopmentTool(int index);
+    void restoreLastDocumentation();
     void completeGettingStartedItem(quint32 item);
     void updateDevelopmentActions();
     void setNotesExpanded(bool expanded);
@@ -109,6 +110,7 @@ private:
     bool m_notesFocusMode = false;
     bool m_notesFocusSidebarVisible = false;
     bool m_notesFocusDockVisible = false;
+    bool m_lastDocumentationRestoreAttempted = false;
 
     // TODO: Replace with proper action manager.
     QAction *m_showDocsetManagerAction = nullptr;

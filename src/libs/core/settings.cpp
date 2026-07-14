@@ -206,6 +206,8 @@ void Settings::load()
     quickTourNextLaunch = boolValue(*settings, QStringLiteral("quick_tour_next_launch"), false);
     openStartNoteOnLaunch = boolValue(*settings, QStringLiteral("open_start_note"), true);
     openLastDocumentationOnLaunch = boolValue(*settings, QStringLiteral("open_last_documentation"), true);
+    lastDocumentationDocsetId = settings->value(QStringLiteral("last_documentation_docset")).toString();
+    lastDocumentationPagePath = settings->value(QStringLiteral("last_documentation_page")).toString();
     bool checklistOk = false;
     const qlonglong checklist = settings->value(QStringLiteral("checklist"), 0).toLongLong(&checklistOk);
     gettingStartedChecklist = checklistOk && checklist >= 0 && checklist <= 0x7f ? static_cast<quint32>(checklist) : 0;
@@ -390,6 +392,8 @@ void Settings::save()
     settings->setValue(QStringLiteral("quick_tour_next_launch"), quickTourNextLaunch);
     settings->setValue(QStringLiteral("open_start_note"), openStartNoteOnLaunch);
     settings->setValue(QStringLiteral("open_last_documentation"), openLastDocumentationOnLaunch);
+    settings->setValue(QStringLiteral("last_documentation_docset"), lastDocumentationDocsetId);
+    settings->setValue(QStringLiteral("last_documentation_page"), lastDocumentationPagePath);
     settings->setValue(QStringLiteral("checklist"), gettingStartedChecklist);
     settings->setValue(QStringLiteral("checklist_dismissed"), gettingStartedChecklistDismissed);
     settings->setValue(QStringLiteral("dismissed_help_tips"), dismissedHelpTips);

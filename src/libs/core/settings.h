@@ -44,6 +44,8 @@ public:
     bool quickTourNextLaunch;
     bool openStartNoteOnLaunch;
     bool openLastDocumentationOnLaunch;
+    QString lastDocumentationDocsetId;
+    QString lastDocumentationPagePath;
     quint32 gettingStartedChecklist;
     bool gettingStartedChecklistDismissed;
     QStringList dismissedHelpTips;
