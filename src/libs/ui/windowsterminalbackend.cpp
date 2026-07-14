@@ -19,6 +19,7 @@
 #include <atomic>
 #include <climits>
 #include <condition_variable>
+#include <cstdio>
 #include <limits>
 #include <memory>
 #include <mutex>
@@ -232,6 +233,8 @@ public:
         startIoThreads();
         m_processNotifier = new QWinEventNotifier(m_process, this);
         connect(m_processNotifier, &QWinEventNotifier::activated, this, [this]() {
+            std::fprintf(stderr, "[conpty] process signaled\n");
+            std::fflush(stderr);
             DWORD exitCode = 0;
             GetExitCodeProcess(m_process, &exitCode);
             finish(static_cast<int>(exitCode), true);
@@ -245,6 +248,8 @@ public:
         if (!m_process || data.isEmpty()) {
             return;
         }
+        std::fprintf(stderr, "[conpty] queue input: %lld bytes\n", static_cast<long long>(data.size()));
+        std::fflush(stderr);
         {
             std::lock_guard lock(m_writeMutex);
             if (m_pendingInput.size() + data.size() > MaxPendingInput) {
@@ -325,6 +330,8 @@ private:
 
         const HANDLE input = m_inputWrite;
         m_writer = std::thread([this, input]() {
+            std::fprintf(stderr, "[conpty] writer started\n");
+            std::fflush(stderr);
             while (!m_stopIo) {
                 QByteArray data;
                 {
@@ -343,6 +350,8 @@ private:
                         std::min<qsizetype>(data.size() - offset, std::numeric_limits<DWORD>::max()));
                     if (!WriteFile(input, data.constData() + offset, remaining, &written, nullptr)) {
                         const DWORD error = GetLastError();
+                        std::fprintf(stderr, "[conpty] WriteFile failed: %lu\n", error);
+                        std::fflush(stderr);
                         if (!m_stopIo) {
                             QMetaObject::invokeMethod(
                                 this,
@@ -354,6 +363,8 @@ private:
                         }
                         return;
                     }
+                    std::fprintf(stderr, "[conpty] wrote: %lu bytes\n", written);
+                    std::fflush(stderr);
                     offset += written;
                 }
             }
