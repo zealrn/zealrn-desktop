@@ -80,10 +80,16 @@ jobs:
       - name: Ensure NSIS is available
         shell: pwsh
         run: |
-          if (-not (Get-Command makensis.exe -ErrorAction SilentlyContinue)) {
+          $makensis = (Get-Command makensis.exe -ErrorAction SilentlyContinue).Source
+          if (-not $makensis) {
             choco install nsis --no-progress -y
+            $makensis = "${env:ProgramFiles(x86)}\NSIS\makensis.exe"
           }
-          makensis.exe /VERSION
+          if (-not (Test-Path $makensis)) {
+            throw "NSIS was installed but makensis.exe was not found."
+          }
+          Split-Path $makensis | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          & $makensis /VERSION
 
       - name: Configure and build release
         uses: lukka/run-cmake@v10
