@@ -35,6 +35,7 @@ private slots:
     void resizesTerminal();
     void interruptsForegroundCommand();
     void destructionReapsChild();
+    void destructionAllowsTermCleanup();
 };
 
 void PosixPtyBackendTest::runsCommandWithTerminalEnvironment()
@@ -126,6 +127,30 @@ void PosixPtyBackendTest::destructionReapsChild()
     backend.reset();
 
     QTRY_VERIFY_WITH_TIMEOUT(::kill(pid, 0) == -1 && errno == ESRCH, 3000);
+}
+
+void PosixPtyBackendTest::destructionAllowsTermCleanup()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString markerPath = directory.filePath(QStringLiteral("term-cleanup"));
+    auto backend = createTerminalBackend();
+    QByteArray output;
+    connect(backend.get(), &TerminalBackend::outputReceived, this, [&output](const QByteArray &data) {
+        output += data;
+    });
+    const QString command = QStringLiteral(
+                                "trap '' HUP; trap \"printf cleaned > '%1'; exit 0\" TERM; "
+                                "printf ready; while :; do sleep 1; done")
+                                .arg(markerPath);
+    QVERIFY(backend->start(shellProfile(command), directory.path(), QSize(80, 24)));
+    QTRY_VERIFY_WITH_TIMEOUT(output.contains("ready"), 3000);
+
+    backend.reset();
+
+    QFile marker(markerPath);
+    QVERIFY(marker.open(QIODevice::ReadOnly));
+    QCOMPARE(marker.readAll(), QByteArrayLiteral("cleaned"));
 }
 
 QTEST_GUILESS_MAIN(PosixPtyBackendTest)

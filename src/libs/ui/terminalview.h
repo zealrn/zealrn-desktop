@@ -48,6 +48,8 @@ private:
     QWebChannel *m_channel = nullptr;
     TerminalBridge *m_bridge = nullptr;
     QSize m_terminalSize = QSize(80, 24);
+    int m_fontSize = 14;
+    bool m_dark = false;
 };
 
 } // namespace Zeal::WidgetUi

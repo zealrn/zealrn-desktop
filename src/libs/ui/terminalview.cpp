@@ -105,7 +105,11 @@ TerminalView::TerminalView(TerminalBackend *backend, QWidget *parent)
         QApplication::clipboard()->setText(text);
     });
     connect(m_bridge, &TerminalBridge::pasteRequested, this, &TerminalView::sendClipboard);
-    connect(m_bridge, &TerminalBridge::ready, this, &TerminalView::focusTerminal);
+    connect(m_bridge, &TerminalBridge::ready, this, [this]() {
+        emit m_bridge->themeChanged(m_dark ? QStringLiteral("dark") : QStringLiteral("light"));
+        emit m_bridge->fontSizeChanged(m_fontSize);
+        focusTerminal();
+    });
 
     m_view->load(TerminalUrl);
 }
@@ -156,11 +160,13 @@ void TerminalView::search(const QString &text, bool backward)
 
 void TerminalView::setDark(bool dark)
 {
+    m_dark = dark;
     emit m_bridge->themeChanged(dark ? QStringLiteral("dark") : QStringLiteral("light"));
 }
 
 void TerminalView::setFontSize(int size)
 {
+    m_fontSize = size;
     emit m_bridge->fontSizeChanged(size);
 }
 

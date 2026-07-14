@@ -149,7 +149,12 @@ public:
         }
         signalProcessGroups(SIGHUP);
         const pid_t terminatingPid = m_pid;
-        QTimer::singleShot(500, this, [this, terminatingPid]() {
+        QTimer::singleShot(250, this, [this, terminatingPid]() {
+            if (m_pid == terminatingPid) {
+                signalProcessGroups(SIGTERM);
+            }
+        });
+        QTimer::singleShot(1250, this, [this, terminatingPid]() {
             if (m_pid == terminatingPid) {
                 signalProcessGroups(SIGKILL);
             }
@@ -254,6 +259,17 @@ private:
                 ::usleep(10000);
             } else if (result < 0 && errno == EINTR) {
                 result = 0;
+            }
+        }
+        if (result == 0) {
+            signalProcessGroups(SIGTERM);
+            for (int attempt = 0; attempt < 80 && result == 0; ++attempt) {
+                result = ::waitpid(m_pid, &status, WNOHANG);
+                if (result == 0) {
+                    ::usleep(10000);
+                } else if (result < 0 && errno == EINTR) {
+                    result = 0;
+                }
             }
         }
         if (result == 0) {
