@@ -78,9 +78,9 @@ QStringList availableShells()
         QSettings registry(key, QSettings::NativeFormat);
         appendExecutable(shells, QDir(registry.value(QStringLiteral("InstallPath")).toString()).filePath(QStringLiteral("bin/bash.exe")));
     }
-    for (const QString &root : {qEnvironmentVariable("ProgramFiles"),
-                                qEnvironmentVariable("ProgramFiles(x86)"),
-                                qEnvironmentVariable("LOCALAPPDATA") + QStringLiteral("/Programs")}) {
+    const QString localPrograms = QDir(qEnvironmentVariable("LOCALAPPDATA")).filePath(QStringLiteral("Programs"));
+    for (const QString &root :
+         {qEnvironmentVariable("ProgramFiles"), qEnvironmentVariable("ProgramFiles(x86)"), localPrograms}) {
         appendExecutable(shells, QDir(root).filePath(QStringLiteral("Git/bin/bash.exe")));
     }
 #else
