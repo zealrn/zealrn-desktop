@@ -11,7 +11,12 @@
 #include <qxtglobalshortcut/qxtglobalshortcut.h>
 
 #include <QDir>
+#include <QCheckBox>
 #include <QFileDialog>
+#include <QGroupBox>
+#include <QHBoxLayout>
+#include <QPushButton>
+#include <QVBoxLayout>
 #include <QWebEngineProfile>
 #include <QWebEngineSettings>
 
@@ -33,6 +38,36 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     , ui(new Ui::SettingsDialog())
 {
     ui->setupUi(this);
+
+    auto *gettingStartedGroup = new QGroupBox(tr("Getting Started"), ui->generalTab);
+    auto *gettingStartedLayout = new QVBoxLayout(gettingStartedGroup);
+    m_quickTourNextLaunchCheckBox = new QCheckBox(tr("Show Quick Tour on next launch"), gettingStartedGroup);
+    m_openStartNoteCheckBox = new QCheckBox(tr("Open Start Note when no documentation page is restored"),
+                                            gettingStartedGroup);
+    m_openLastDocumentationCheckBox = new QCheckBox(tr("Open last documentation page on launch"),
+                                                    gettingStartedGroup);
+    m_terminalStartOnOpenCheckBox = new QCheckBox(tr("Start terminal when Developer Terminal is opened"),
+                                                  gettingStartedGroup);
+    gettingStartedLayout->addWidget(m_quickTourNextLaunchCheckBox);
+    gettingStartedLayout->addWidget(m_openStartNoteCheckBox);
+    gettingStartedLayout->addWidget(m_openLastDocumentationCheckBox);
+    gettingStartedLayout->addWidget(m_terminalStartOnOpenCheckBox);
+
+    auto *resetLayout = new QHBoxLayout;
+    auto *resetChecklistButton = new QPushButton(tr("Reset Getting Started checklist"), gettingStartedGroup);
+    auto *resetTipsButton = new QPushButton(tr("Reset help tips"), gettingStartedGroup);
+    resetLayout->addWidget(resetChecklistButton);
+    resetLayout->addWidget(resetTipsButton);
+    resetLayout->addStretch();
+    gettingStartedLayout->addLayout(resetLayout);
+    ui->verticalLayout_7->insertWidget(1, gettingStartedGroup);
+
+    connect(resetChecklistButton, &QPushButton::clicked, this, []() {
+        Core::Application::instance()->settings()->resetGettingStartedChecklist();
+    });
+    connect(resetTipsButton, &QPushButton::clicked, this, []() {
+        Core::Application::instance()->settings()->resetHelpTips();
+    });
 
     // Setup signals & slots
     connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &SettingsDialog::saveSettings);
@@ -165,6 +200,10 @@ void SettingsDialog::loadSettings()
     ui->hideToSystrayCheckBox->setChecked(settings->hideOnClose);
 
     ui->toolButton->setKeySequence(settings->showShortcut);
+    m_quickTourNextLaunchCheckBox->setChecked(settings->quickTourNextLaunch);
+    m_openStartNoteCheckBox->setChecked(settings->openStartNoteOnLaunch);
+    m_openLastDocumentationCheckBox->setChecked(settings->openLastDocumentationOnLaunch);
+    m_terminalStartOnOpenCheckBox->setChecked(settings->terminalStartOnOpen);
 
     ui->docsetStorageEdit->setText(QDir::toNativeSeparators(settings->docsetPath));
 
@@ -262,6 +301,10 @@ void SettingsDialog::saveSettings()
     settings->hideOnClose = ui->hideToSystrayCheckBox->isChecked();
 
     settings->showShortcut = ui->toolButton->keySequence();
+    settings->quickTourNextLaunch = m_quickTourNextLaunchCheckBox->isChecked();
+    settings->openStartNoteOnLaunch = m_openStartNoteCheckBox->isChecked();
+    settings->openLastDocumentationOnLaunch = m_openLastDocumentationCheckBox->isChecked();
+    settings->terminalStartOnOpen = m_terminalStartOnOpenCheckBox->isChecked();
 
     const QString docsetPath = QDir::fromNativeSeparators(ui->docsetStorageEdit->text());
     if (docsetPath != settings->docsetPath) {

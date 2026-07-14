@@ -72,6 +72,7 @@ private:
     void setupMainMenu();
     void setupShortcuts();
     void setupTabBar();
+    void showQuickTour(bool manual = false);
     void showDevelopmentTool(int index);
     void updateDevelopmentActions();
     void setNotesExpanded(bool expanded);

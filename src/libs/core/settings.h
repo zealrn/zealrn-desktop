@@ -7,6 +7,7 @@
 #include <QDataStream>
 #include <QKeySequence>
 #include <QObject>
+#include <QStringList>
 
 #include <memory>
 
@@ -36,6 +37,16 @@ public:
     int bottomDevelopmentTool;
     int learningNotesZoom;
     bool learningNotesLineWrap;
+
+    // Getting started
+    bool quickTourShown;
+    bool quickTourCompleted;
+    bool quickTourNextLaunch;
+    bool openStartNoteOnLaunch;
+    bool openLastDocumentationOnLaunch;
+    quint32 gettingStartedChecklist;
+    bool gettingStartedChecklistDismissed;
+    QStringList dismissedHelpTips;
     // TODO: bool restoreLastState;
 
     // System Tray
@@ -119,6 +130,8 @@ public:
     bool isDarkModeEnabled() const;
     bool isDocumentationThemeRestartRequired() const;
     bool isTrayActive() const;
+    void resetGettingStartedChecklist();
+    void resetHelpTips();
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
     using ColorScheme = Qt::ColorScheme;

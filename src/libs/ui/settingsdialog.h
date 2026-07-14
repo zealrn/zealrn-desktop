@@ -7,6 +7,8 @@
 
 #include <QDialog>
 
+class QCheckBox;
+
 namespace Zeal::WidgetUi {
 
 namespace Ui {
@@ -29,6 +31,10 @@ private:
     void saveSettings();
 
     Ui::SettingsDialog *ui = nullptr;
+    QCheckBox *m_quickTourNextLaunchCheckBox = nullptr;
+    QCheckBox *m_openStartNoteCheckBox = nullptr;
+    QCheckBox *m_openLastDocumentationCheckBox = nullptr;
+    QCheckBox *m_terminalStartOnOpenCheckBox = nullptr;
 
     friend class Ui::SettingsDialog;
 };

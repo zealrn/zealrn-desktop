@@ -39,6 +39,26 @@ constexpr auto GroupSearch = "search"_L1;
 constexpr auto GroupTabs = "tabs"_L1;
 constexpr auto GroupInternal = "internal"_L1;
 constexpr auto GroupProxy = "proxy"_L1;
+constexpr auto GroupGettingStarted = "getting_started"_L1;
+
+bool boolValue(const QSettings &settings, const QString &key, bool defaultValue)
+{
+    const QVariant value = settings.value(key);
+    if (!value.isValid()) {
+        return defaultValue;
+    }
+    if (value.metaType().id() == QMetaType::Bool) {
+        return value.toBool();
+    }
+    const QString text = value.toString().trimmed().toLower();
+    if (text == QLatin1String("true") || text == QLatin1String("1")) {
+        return true;
+    }
+    if (text == QLatin1String("false") || text == QLatin1String("0")) {
+        return false;
+    }
+    return defaultValue;
+}
 } // namespace
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init): initialized by load().
@@ -178,6 +198,19 @@ void Settings::load()
 
     settings->beginGroup(GroupSearch);
     isFuzzySearchEnabled = settings->value(QStringLiteral("fuzzy_search_enabled"), true).toBool();
+    settings->endGroup();
+
+    settings->beginGroup(GroupGettingStarted);
+    quickTourShown = boolValue(*settings, QStringLiteral("quick_tour_shown"), false);
+    quickTourCompleted = boolValue(*settings, QStringLiteral("quick_tour_completed"), false);
+    quickTourNextLaunch = boolValue(*settings, QStringLiteral("quick_tour_next_launch"), false);
+    openStartNoteOnLaunch = boolValue(*settings, QStringLiteral("open_start_note"), true);
+    openLastDocumentationOnLaunch = boolValue(*settings, QStringLiteral("open_last_documentation"), true);
+    bool checklistOk = false;
+    const qlonglong checklist = settings->value(QStringLiteral("checklist"), 0).toLongLong(&checklistOk);
+    gettingStartedChecklist = checklistOk && checklist >= 0 && checklist <= 0x7f ? static_cast<quint32>(checklist) : 0;
+    gettingStartedChecklistDismissed = boolValue(*settings, QStringLiteral("checklist_dismissed"), false);
+    dismissedHelpTips = settings->value(QStringLiteral("dismissed_help_tips")).toStringList();
     settings->endGroup();
 
     settings->beginGroup(GroupContent);
@@ -351,6 +384,17 @@ void Settings::save()
     settings->setValue(QStringLiteral("fuzzy_search_enabled"), isFuzzySearchEnabled);
     settings->endGroup();
 
+    settings->beginGroup(GroupGettingStarted);
+    settings->setValue(QStringLiteral("quick_tour_shown"), quickTourShown);
+    settings->setValue(QStringLiteral("quick_tour_completed"), quickTourCompleted);
+    settings->setValue(QStringLiteral("quick_tour_next_launch"), quickTourNextLaunch);
+    settings->setValue(QStringLiteral("open_start_note"), openStartNoteOnLaunch);
+    settings->setValue(QStringLiteral("open_last_documentation"), openLastDocumentationOnLaunch);
+    settings->setValue(QStringLiteral("checklist"), gettingStartedChecklist);
+    settings->setValue(QStringLiteral("checklist_dismissed"), gettingStartedChecklistDismissed);
+    settings->setValue(QStringLiteral("dismissed_help_tips"), dismissedHelpTips);
+    settings->endGroup();
+
     settings->beginGroup(GroupContent);
     settings->setValue(QStringLiteral("default_font_family"), defaultFontFamily);
     settings->setValue(QStringLiteral("serif_font_family"), serifFontFamily);
@@ -392,6 +436,19 @@ void Settings::save()
     settings->sync();
 
     emit updated();
+}
+
+void Settings::resetGettingStartedChecklist()
+{
+    gettingStartedChecklist = 0;
+    gettingStartedChecklistDismissed = false;
+    save();
+}
+
+void Settings::resetHelpTips()
+{
+    dismissedHelpTips.clear();
+    save();
 }
 
 /*!

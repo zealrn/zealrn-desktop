@@ -20,6 +20,7 @@ add_library(Ui STATIC
     learningnotesexporter.cpp
     learningnotesstore.cpp
     mainwindow.cpp
+    quicktourdialog.cpp
     searchitemdelegate.cpp
     searchsidebar.cpp
     settingsdialog.cpp

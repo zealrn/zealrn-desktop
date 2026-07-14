@@ -29,6 +29,8 @@ private slots:
     void invalidBottomToolFallsBackToWebPlayground();
     void noteEditorSettingsRestoreAfterReopen();
     void invalidNoteZoomIsClamped();
+    void gettingStartedSettingsRestoreAfterReopen();
+    void invalidGettingStartedValuesUseSafeDefaults();
     void sharedDocsetSettingRestoresAfterReopen();
     void existingZealDocsetPathsFindsNativeAndFlatpakLibraries();
 };
@@ -206,6 +208,48 @@ void SettingsTest::invalidNoteZoomIsClamped()
 
     Settings restored;
     QCOMPARE(restored.learningNotesZoom, 200);
+}
+
+void SettingsTest::gettingStartedSettingsRestoreAfterReopen()
+{
+    QTemporaryDir dir;
+    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, dir.path());
+    {
+        Settings settings;
+        settings.quickTourShown = true;
+        settings.quickTourCompleted = true;
+        settings.quickTourNextLaunch = true;
+        settings.openStartNoteOnLaunch = false;
+        settings.openLastDocumentationOnLaunch = false;
+        settings.gettingStartedChecklist = 0x25;
+        settings.gettingStartedChecklistDismissed = true;
+        settings.dismissedHelpTips = {QStringLiteral("notes"), QStringLiteral("terminal")};
+        settings.save();
+    }
+
+    Settings restored;
+    QVERIFY(restored.quickTourShown);
+    QVERIFY(restored.quickTourCompleted);
+    QVERIFY(restored.quickTourNextLaunch);
+    QVERIFY(!restored.openStartNoteOnLaunch);
+    QVERIFY(!restored.openLastDocumentationOnLaunch);
+    QCOMPARE(restored.gettingStartedChecklist, quint32(0x25));
+    QVERIFY(restored.gettingStartedChecklistDismissed);
+    QCOMPARE(restored.dismissedHelpTips, QStringList({QStringLiteral("notes"), QStringLiteral("terminal")}));
+}
+
+void SettingsTest::invalidGettingStartedValuesUseSafeDefaults()
+{
+    QTemporaryDir dir;
+    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, dir.path());
+    QSettings raw;
+    raw.setValue(QStringLiteral("getting_started/open_start_note"), QStringLiteral("invalid"));
+    raw.setValue(QStringLiteral("getting_started/checklist"), -1);
+    raw.sync();
+
+    Settings restored;
+    QVERIFY(restored.openStartNoteOnLaunch);
+    QCOMPARE(restored.gettingStartedChecklist, quint32(0));
 }
 
 void SettingsTest::sharedDocsetSettingRestoresAfterReopen()

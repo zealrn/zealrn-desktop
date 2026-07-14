@@ -9,6 +9,7 @@
 #include "docsetsdialog.h"
 #include "developerterminalpanel.h"
 #include "learningnotespanel.h"
+#include "quicktourdialog.h"
 #include "searchsidebar.h"
 #include "settingsdialog.h"
 #include "sidebarviewprovider.h"
@@ -189,6 +190,10 @@ MainWindow::MainWindow(Core::Application *app, QWidget *parent)
 
     connect(m_settings, &Core::Settings::updated, this, &MainWindow::applySettings);
     applySettings();
+
+    QTimer::singleShot(0, this, [this]() {
+        showQuickTour();
+    });
 }
 
 MainWindow::~MainWindow()
@@ -701,6 +706,12 @@ void MainWindow::setupMainMenu()
     // Help Menu.
     menu = m_menuBar->addMenu(tr("&Help"));
 
+    menu->addAction(tr("&Quick Tour"), this, [this]() {
+        showQuickTour(true);
+    });
+
+    menu->addSeparator();
+
     // -> Submit Feedback Action.
     menu->addAction(tr("&Submit Feedback"), this, []() {
         QDesktopServices::openUrl(QUrl(QStringLiteral("https://go.zealdocs.org/l/report-bug")));
@@ -726,6 +737,30 @@ void MainWindow::setupMainMenu()
     action->setMenuRole(QAction::AboutRole);
 
     setMenuBar(m_menuBar);
+}
+
+void MainWindow::showQuickTour(bool manual)
+{
+    if (!manual && m_settings->quickTourShown && !m_settings->quickTourNextLaunch) {
+        return;
+    }
+
+    if (!manual) {
+        m_settings->quickTourShown = true;
+        m_settings->quickTourNextLaunch = false;
+        m_settings->save();
+    }
+
+    QuickTourDialog dialog(this);
+    connect(&dialog, &QuickTourDialog::openDocsetLibraryRequested, m_showDocsetManagerAction, &QAction::trigger);
+    connect(&dialog, &QuickTourDialog::openStartNoteRequested, m_learningNotesPanel, &LearningNotesPanel::showStartNote);
+
+    if (dialog.exec() == QDialog::Accepted) {
+        m_settings->quickTourCompleted = true;
+    } else if (!dialog.doNotShowAutomatically()) {
+        m_settings->quickTourNextLaunch = true;
+    }
+    m_settings->save();
 }
 
 void MainWindow::showDevelopmentTool(int index)

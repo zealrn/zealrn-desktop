@@ -12,6 +12,12 @@ if(NOT WIN32)
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QTWEBENGINE_DISABLE_SANDBOX=1")
 endif()
 
+add_executable(quicktourdialog_test quicktourdialog_test.cpp)
+target_link_libraries(quicktourdialog_test PRIVATE Ui Core Qt6::Test Qt6::Widgets)
+
+zeal_add_test(quicktourdialog_test)
+set_tests_properties(quicktourdialog_test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     add_executable(posixptybackend_test posixptybackend_test.cpp)
     target_link_libraries(posixptybackend_test PRIVATE Ui Core Qt6::Test)
