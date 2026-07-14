@@ -3,8 +3,6 @@
 
 #include "terminalbackend.h"
 
-#include <QWidget>
-
 namespace Zeal::WidgetUi {
 
 namespace {
@@ -26,19 +24,17 @@ public:
         return tr("Embedded terminal support was disabled when this application was built.");
 #endif
     }
-    QWidget *widget() const override { return nullptr; }
     bool isRunning() const override { return false; }
-    bool start(const QString &, const QString &) override { return false; }
-    void stop() override { }
-    void clear() override { }
-    void copy() override { }
-    void paste() override { }
-    void applyAppearance(bool) override { }
+    bool start(const TerminalProfile &, const QString &, QSize) override { return false; }
+    void write(const QByteArray &) override { }
+    void resize(QSize) override { }
+    void interrupt() override { }
+    void terminate() override { }
 };
 
 } // namespace
 
-std::unique_ptr<TerminalBackend> createTerminalBackend(QWidget *parent)
+std::unique_ptr<TerminalBackend> createTerminalBackend(QObject *parent)
 {
     return std::make_unique<UnavailableTerminalBackend>(parent);
 }

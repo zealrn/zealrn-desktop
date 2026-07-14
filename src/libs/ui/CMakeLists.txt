@@ -24,7 +24,9 @@ add_library(Ui STATIC
     settingsdialog.cpp
     sidebarviewprovider.cpp
     terminalbackend.cpp
+    terminalbridge.cpp
     terminalsupport.cpp
+    terminalview.cpp
     webplaygroundeditor.cpp
     webplaygroundpanel.cpp
     webplaygroundpreview.cpp
@@ -36,19 +38,11 @@ add_library(Ui STATIC
 set(TerminalBackend_SOURCE unavailableterminalbackend.cpp)
 if(ZEALRN_ENABLE_TERMINAL)
     target_compile_definitions(Ui PRIVATE ZEALRN_ENABLE_TERMINAL)
-    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        find_package(qtermwidget6 CONFIG QUIET)
-        if(TARGET qtermwidget6)
-            set(TerminalBackend_SOURCE linuxterminalbackend.cpp)
-            target_link_libraries(Ui PRIVATE qtermwidget6)
-            target_compile_definitions(Ui PUBLIC ZEALRN_HAVE_QTERMWIDGET)
-            message(STATUS "Developer Terminal: QTermWidget backend enabled")
-        else()
-            message(STATUS "Developer Terminal: QTermWidget unavailable; external terminal fallback enabled")
-        endif()
-    elseif(WIN32)
+    if(WIN32)
         set(TerminalBackend_SOURCE windowsterminalbackend.cpp)
         message(STATUS "Developer Terminal: Windows external terminal fallback enabled")
+    else()
+        message(STATUS "Developer Terminal: native backend pending; external terminal fallback enabled")
     endif()
 else()
     message(STATUS "Developer Terminal: disabled; external terminal fallback enabled")

@@ -3,9 +3,13 @@
 
 #include "../terminalsupport.h"
 #include "../terminalbackend.h"
+#include "../terminalbridge.h"
+#include "../terminalview.h"
 
+#include <QSignalSpy>
 #include <QTest>
 #include <QTemporaryDir>
+#include <QUrl>
 
 using namespace Zeal::WidgetUi::TerminalSupport;
 
@@ -22,6 +26,11 @@ private slots:
     void windowsExternalTerminal_prefersWindowsTerminal();
     void windowsExternalTerminal_withoutWtUsesSelectedShell();
     void backendFactory_matchesBuildConfiguration();
+    void terminalBridge_decodesInputBytes();
+    void terminalBridge_queuesOutputUntilReady();
+    void terminalBridge_batchesOutput();
+    void terminalBridge_boundsPendingOutput();
+    void terminalView_allowsOnlyLocalAssets();
 };
 
 void DeveloperTerminalTest::validatedShell_keepsAvailableChoice()
@@ -103,13 +112,80 @@ void DeveloperTerminalTest::backendFactory_matchesBuildConfiguration()
 {
     const auto backend = Zeal::WidgetUi::createTerminalBackend();
     QVERIFY(backend);
-#ifdef ZEALRN_HAVE_QTERMWIDGET
-    QVERIFY(backend->isAvailable());
-    QVERIFY(backend->widget());
-#else
     QVERIFY(!backend->isAvailable());
-    QVERIFY(!backend->widget());
-#endif
+    QVERIFY(!backend->isRunning());
+    QVERIFY(!backend->start({}, QStringLiteral("/missing"), QSize(80, 24)));
+}
+
+void DeveloperTerminalTest::terminalBridge_decodesInputBytes()
+{
+    Zeal::WidgetUi::TerminalBridge bridge;
+    QSignalSpy spy(&bridge, &Zeal::WidgetUi::TerminalBridge::inputReceived);
+    const QByteArray input("\x03\xe2\x82\xac", 4);
+
+    bridge.sendInput(QString::fromLatin1(input.toBase64()));
+
+    QCOMPARE(spy.count(), 1);
+    QCOMPARE(spy.takeFirst().at(0).toByteArray(), input);
+}
+
+void DeveloperTerminalTest::terminalBridge_queuesOutputUntilReady()
+{
+    Zeal::WidgetUi::TerminalBridge bridge;
+    QSignalSpy spy(&bridge, &Zeal::WidgetUi::TerminalBridge::outputReceived);
+    const QByteArray first("\xe2", 1);
+    const QByteArray second("\x82\xac", 2);
+
+    bridge.enqueueOutput(first);
+    bridge.enqueueOutput(second);
+    QCoreApplication::processEvents();
+    QCOMPARE(spy.count(), 0);
+
+    bridge.frontendReady();
+    QTRY_COMPARE(spy.count(), 1);
+    QCOMPARE(QByteArray::fromBase64(spy.takeFirst().at(0).toString().toLatin1()), first + second);
+}
+
+void DeveloperTerminalTest::terminalBridge_batchesOutput()
+{
+    Zeal::WidgetUi::TerminalBridge bridge;
+    bridge.frontendReady();
+    QSignalSpy spy(&bridge, &Zeal::WidgetUi::TerminalBridge::outputReceived);
+
+    bridge.enqueueOutput(QByteArrayLiteral("one"));
+    bridge.enqueueOutput(QByteArrayLiteral("two"));
+
+    QTRY_COMPARE(spy.count(), 1);
+    QCOMPARE(QByteArray::fromBase64(spy.takeFirst().at(0).toString().toLatin1()), QByteArrayLiteral("onetwo"));
+}
+
+void DeveloperTerminalTest::terminalBridge_boundsPendingOutput()
+{
+    Zeal::WidgetUi::TerminalBridge bridge;
+    QSignalSpy errors(&bridge, &Zeal::WidgetUi::TerminalBridge::errorOccurred);
+    QSignalSpy output(&bridge, &Zeal::WidgetUi::TerminalBridge::outputReceived);
+    const QByteArray oversized(Zeal::WidgetUi::TerminalBridge::MaxPendingBytes + 32, 'x');
+
+    bridge.enqueueOutput(oversized);
+    bridge.frontendReady();
+
+    QTRY_COMPARE(errors.count(), 1);
+    QTRY_COMPARE(output.count(), 1);
+    QCOMPARE(QByteArray::fromBase64(output.takeFirst().at(0).toString().toLatin1()).size(),
+             Zeal::WidgetUi::TerminalBridge::MaxPendingBytes);
+}
+
+void DeveloperTerminalTest::terminalView_allowsOnlyLocalAssets()
+{
+    using Zeal::WidgetUi::TerminalView;
+
+    QVERIFY(TerminalView::isAllowedUrl(QUrl(QStringLiteral("qrc:/terminal/index.html"))));
+    QVERIFY(TerminalView::isAllowedUrl(QUrl(QStringLiteral("qrc:/terminal/terminal.bundle.js"))));
+    QVERIFY(TerminalView::isAllowedUrl(QUrl(QStringLiteral("qrc:/qtwebchannel/qwebchannel.js"))));
+    QVERIFY(!TerminalView::isAllowedUrl(QUrl(QStringLiteral("qrc:/playground/editor.html"))));
+    QVERIFY(!TerminalView::isAllowedUrl(QUrl(QStringLiteral("https://example.com"))));
+    QVERIFY(!TerminalView::isAllowedUrl(QUrl::fromLocalFile(QStringLiteral("/tmp/file"))));
+    QVERIFY(!TerminalView::isAllowedUrl(QUrl(QStringLiteral("data:text/html,terminal"))));
 }
 
 QTEST_MAIN(DeveloperTerminalTest)

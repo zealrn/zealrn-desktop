@@ -23,6 +23,7 @@ class Settings;
 namespace WidgetUi {
 
 class TerminalBackend;
+class TerminalView;
 
 class DeveloperTerminalPanel final : public QWidget
 {
@@ -50,6 +51,7 @@ private:
 
     Core::Settings *m_settings = nullptr;
     std::unique_ptr<TerminalBackend> m_backend;
+    TerminalView *m_terminalView = nullptr;
     QString m_workingDirectory;
 
     QComboBox *m_shell = nullptr;

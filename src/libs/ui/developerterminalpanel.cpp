@@ -5,6 +5,7 @@
 
 #include "terminalbackend.h"
 #include "terminalsupport.h"
+#include "terminalview.h"
 
 #include <core/settings.h>
 
@@ -13,6 +14,7 @@
 #include <QComboBox>
 #include <QDesktopServices>
 #include <QDir>
+#include <QFileInfo>
 #include <QFileDialog>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -109,9 +111,9 @@ DeveloperTerminalPanel::DeveloperTerminalPanel(Core::Settings *settings, QWidget
 
     connect(m_newSessionButton, &QPushButton::clicked, this, &DeveloperTerminalPanel::startSession);
     connect(workingDirectoryButton, &QPushButton::clicked, this, &DeveloperTerminalPanel::chooseWorkingDirectory);
-    connect(m_clearButton, &QPushButton::clicked, this, [this]() { m_backend->clear(); });
-    connect(m_copyButton, &QPushButton::clicked, this, [this]() { m_backend->copy(); });
-    connect(m_pasteButton, &QPushButton::clicked, this, [this]() { m_backend->paste(); });
+    connect(m_clearButton, &QPushButton::clicked, this, [this]() { m_terminalView->clear(); });
+    connect(m_copyButton, &QPushButton::clicked, this, [this]() { m_terminalView->copy(); });
+    connect(m_pasteButton, &QPushButton::clicked, this, [this]() { m_terminalView->paste(); });
     connect(externalButton, &QPushButton::clicked, this, &DeveloperTerminalPanel::openExternalTerminal);
     connect(closeButton, &QPushButton::clicked, this, &DeveloperTerminalPanel::closeRequested);
     connect(copyPathButton, &QPushButton::clicked, this, [this]() {
@@ -159,7 +161,7 @@ void DeveloperTerminalPanel::ensureBackend()
     }
 
     m_backend = createTerminalBackend(this);
-    connect(m_backend.get(), &TerminalBackend::started, this, [this]() {
+    connect(m_backend.get(), &TerminalBackend::started, this, [this](const TerminalProfile &) {
         updateStatus(tr("Running"));
         m_clearButton->setEnabled(true);
         m_copyButton->setEnabled(true);
@@ -176,9 +178,10 @@ void DeveloperTerminalPanel::ensureBackend()
         m_backendMessage->setText(message);
     });
 
-    if (QWidget *terminal = m_backend->widget()) {
+    if (m_backend->isAvailable()) {
+        m_terminalView = new TerminalView(m_backend.get(), this);
         m_backendMessage->hide();
-        m_terminalLayout->addWidget(terminal);
+        m_terminalLayout->addWidget(m_terminalView);
     } else {
         m_backendMessage->setText(m_backend->unavailableReason());
     }
@@ -206,13 +209,17 @@ void DeveloperTerminalPanel::startSession()
     }
 
     if (m_backend->isRunning()) {
-        m_backend->stop();
+        m_backend->terminate();
     }
 
     m_settings->terminalShell = m_shell->currentText();
     m_settings->terminalWorkingDirectory = m_workingDirectory;
     m_settings->save();
-    if (!m_backend->start(m_settings->terminalShell, m_workingDirectory)) {
+    const TerminalProfile profile = {m_settings->terminalShell,
+                                     QFileInfo(m_settings->terminalShell).fileName(),
+                                     m_settings->terminalShell,
+                                     {}};
+    if (!m_terminalView->start(profile, m_workingDirectory)) {
         updateStatus(tr("Failed to start"));
     }
 }
@@ -245,8 +252,8 @@ void DeveloperTerminalPanel::openExternalTerminal()
 
 void DeveloperTerminalPanel::applyAppearance()
 {
-    if (m_backend) {
-        m_backend->applyAppearance(m_settings->isDarkModeEnabled());
+    if (m_terminalView) {
+        m_terminalView->setDark(m_settings->isDarkModeEnabled());
     }
 }
 

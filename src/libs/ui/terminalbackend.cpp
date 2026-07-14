@@ -10,4 +10,6 @@ TerminalBackend::TerminalBackend(QObject *parent)
 {
 }
 
+static const int TerminalProfileMetaType = qRegisterMetaType<TerminalProfile>();
+
 } // namespace Zeal::WidgetUi
