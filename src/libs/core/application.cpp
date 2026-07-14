@@ -160,6 +160,11 @@ QUrl Application::releasesApiUrl()
     return QUrl(QStringLiteral("https://api.github.com/repos/abnzrdev/zealrn/releases"));
 }
 
+QUrl Application::releasesPageUrl()
+{
+    return QUrl(QStringLiteral("https://github.com/abnzrdev/zealrn/releases"));
+}
+
 std::optional<QVersionNumber> Application::latestPublishedRelease(const QByteArray &json, QString *error)
 {
     if (error != nullptr) {

@@ -52,6 +52,7 @@ public:
     static QVersionNumber version();
     static QString versionString();
     static QUrl releasesApiUrl();
+    static QUrl releasesPageUrl();
     static std::optional<QVersionNumber> latestPublishedRelease(const QByteArray &json,
                                                                 QString *error = nullptr);
 

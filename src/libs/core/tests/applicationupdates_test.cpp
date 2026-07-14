@@ -13,6 +13,7 @@ class ApplicationUpdatesTest : public QObject
 
 private slots:
     void usesZealrnRepository();
+    void usesZealrnReleasePage();
     void emptyListMeansNoPublishedReleases();
     void ignoresDraftsAndPrereleases();
     void rejectsMalformedJson();
@@ -22,6 +23,12 @@ void ApplicationUpdatesTest::usesZealrnRepository()
 {
     QCOMPARE(Application::releasesApiUrl().toString(),
              QStringLiteral("https://api.github.com/repos/abnzrdev/zealrn/releases"));
+}
+
+void ApplicationUpdatesTest::usesZealrnReleasePage()
+{
+    QCOMPARE(Application::releasesPageUrl().toString(),
+             QStringLiteral("https://github.com/abnzrdev/zealrn/releases"));
 }
 
 void ApplicationUpdatesTest::emptyListMeansNoPublishedReleases()

@@ -26,28 +26,37 @@ WindowManager::WindowManager(Core::Application *application, QObject *parent)
     , m_settings(application->settings())
 {
     // Update-check dialogs are session-level, not per-window.
+    connect(m_application, &Core::Application::updateCheckNoReleases, this, [this]() {
+        QMessageBox::information(activeWindow(),
+                                 tr("Check for Updates"),
+                                 tr("No ZealRN releases have been published yet."));
+    });
+
     connect(m_application, &Core::Application::updateCheckError, this, [this](const QString &message) {
-        QMessageBox::warning(activeWindow(), QStringLiteral("ZealRN"), message.toHtmlEscaped());
+        QMessageBox::warning(activeWindow(),
+                             tr("Check for Updates"),
+                             tr("Could not check for ZealRN updates: %1").arg(message.toHtmlEscaped()));
     });
 
     connect(m_application, &Core::Application::updateCheckDone, this, [this](const QString &version) {
         if (version.isEmpty()) {
-            QMessageBox::information(activeWindow(), QStringLiteral("ZealRN"), tr("You are using the latest version."));
+            QMessageBox::information(activeWindow(),
+                                     tr("Check for Updates"),
+                                     tr("You are using the latest published ZealRN release."));
             return;
         }
 
         // TODO: Remove this ugly workaround for #637.
         qApp->setQuitOnLastWindowClosed(false);
         const int ret = QMessageBox::information(activeWindow(),
-                                                 QStringLiteral("ZealRN"),
-                                                 tr("ZealRN <b>%1</b> is available. Open download page?")
-                                                     .arg(version.toHtmlEscaped()),
-                                                 QMessageBox::Yes | QMessageBox::No,
-                                                 QMessageBox::Yes);
+                                                 tr("ZealRN Update Available"),
+                                                 tr("ZealRN %1 is available.").arg(version.toHtmlEscaped()),
+                                                 QMessageBox::Open | QMessageBox::Cancel,
+                                                 QMessageBox::Open);
         qApp->setQuitOnLastWindowClosed(true);
 
-        if (ret == QMessageBox::Yes) {
-            QDesktopServices::openUrl(QUrl(QStringLiteral("https://zealdocs.org/download.html")));
+        if (ret == QMessageBox::Open) {
+            QDesktopServices::openUrl(Core::Application::releasesPageUrl());
         }
     });
 

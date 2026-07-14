@@ -98,34 +98,6 @@ MainWindow::MainWindow(Core::Application *app, QWidget *parent)
     setupShortcuts();
     setupTabBar();
 
-    connect(m_application, &Core::Application::updateCheckNoReleases, this, [this]() {
-        QMessageBox::information(this,
-                                 tr("Check for Updates"),
-                                 tr("No ZealRN releases have been published yet."));
-    });
-    connect(m_application, &Core::Application::updateCheckError, this, [this](const QString &message) {
-        QMessageBox::warning(this,
-                             tr("Check for Updates"),
-                             tr("Could not check for ZealRN updates: %1").arg(message));
-    });
-    connect(m_application, &Core::Application::updateCheckDone, this, [this](const QString &version) {
-        if (version.isEmpty()) {
-            QMessageBox::information(this,
-                                     tr("Check for Updates"),
-                                     tr("You are using the latest published ZealRN release."));
-            return;
-        }
-
-        if (QMessageBox::information(this,
-                                     tr("ZealRN Update Available"),
-                                     tr("ZealRN %1 is available.").arg(version),
-                                     QMessageBox::Open | QMessageBox::Cancel,
-                                     QMessageBox::Open)
-            == QMessageBox::Open) {
-            QDesktopServices::openUrl(QUrl(QStringLiteral("https://github.com/abnzrdev/zealrn/releases")));
-        }
-    });
-
     // Setup central widget.
     auto *centralWidget = new QWidget(this);
     auto *centralWidgetLayout = new QVBoxLayout(centralWidget);
