@@ -172,6 +172,102 @@ kbd {
   padding: 3rem 1.75rem 1.5rem;
 }
 
+.welcome-page {
+  max-width: 760px;
+  justify-content: flex-start;
+  padding-top: 2rem;
+}
+
+.welcome-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  flex: none;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--deep);
+  border: 1px solid var(--rule-soft);
+  border-radius: 4px;
+}
+
+.checklist {
+  padding: 1rem;
+  background: var(--card);
+  border: 1px solid var(--rule-soft);
+  border-radius: 6px;
+}
+
+.checklist-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.checklist-heading h2 {
+  font-size: 1rem;
+}
+
+.checklist-heading .overline {
+  margin-bottom: 0.15rem;
+}
+
+.checklist ul {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem 1rem;
+  margin: 0.8rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.checklist li {
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+}
+
+.checklist li::before {
+  content: "○";
+  display: inline-block;
+  width: 1.25rem;
+  color: var(--ink-softer);
+}
+
+.checklist li.complete {
+  color: var(--ink-softer);
+  text-decoration: line-through;
+}
+
+.checklist li.complete::before {
+  content: "✓";
+  color: var(--accent);
+}
+
+.dismiss {
+  padding: 0.35rem 0.55rem;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 1px solid var(--rule-soft);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+@media (max-width: 620px) {
+  .welcome-cards,
+  .checklist ul {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Brand lockup */
 .brand {
   display: flex;

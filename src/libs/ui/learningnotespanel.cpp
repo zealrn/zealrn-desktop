@@ -732,6 +732,7 @@ void LearningNotesPanel::exportNote(const LearningNote &note, LearningNotesExpor
     }
     if (result == LearningNotesExport::Result::Success) {
         QMessageBox::information(this, tr("Export Complete"), tr("The note was exported successfully."));
+        emit exportCompleted();
     } else {
         QMessageBox::warning(this, tr("Export Failed"), error);
     }
@@ -757,6 +758,7 @@ void LearningNotesPanel::exportAllNotes()
     QString error;
     if (LearningNotesExport::writeAllZip(path, notes, true, &error) == LearningNotesExport::Result::Success) {
         QMessageBox::information(this, tr("Export Complete"), tr("All notes were exported successfully."));
+        emit exportCompleted();
     } else {
         QMessageBox::warning(this, tr("Export Failed"), error);
     }
@@ -777,6 +779,7 @@ void LearningNotesPanel::backupDatabase()
     if (LearningNotesExport::copyDatabase(m_store->databasePath(), path, true, &error)
         == LearningNotesExport::Result::Success) {
         QMessageBox::information(this, tr("Backup Complete"), tr("The notes database was backed up successfully."));
+        emit exportCompleted();
     } else {
         QMessageBox::warning(this, tr("Backup Failed"), error);
     }

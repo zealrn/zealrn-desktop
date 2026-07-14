@@ -45,6 +45,7 @@ public:
     bool flush();
     int databaseSchemaVersion() const;
     void appendSelection(const QString &selection);
+    void showAllNotes();
     void exitFocusMode();
     void exitExpandedMode();
 
@@ -54,6 +55,7 @@ signals:
     void expandedModeRequested(bool expanded);
     void focusModeRequested(bool focused);
     void noteSaved(const LearningNotePage &page);
+    void exportCompleted();
 
 private:
     void setupUi();
@@ -64,7 +66,6 @@ private:
     void setZoom(int percent);
     void setLineWrap(bool enabled);
     bool save(bool explicitSave);
-    void showAllNotes();
     void exportNote(const LearningNote &note, LearningNotesExport::Format format);
     void exportAllNotes();
     void backupDatabase();

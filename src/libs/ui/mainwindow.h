@@ -76,6 +76,7 @@ private:
     void showQuickTour(bool manual = false);
     void showHelp(int section);
     void showDevelopmentTool(int index);
+    void completeGettingStartedItem(quint32 item);
     void updateDevelopmentActions();
     void setNotesExpanded(bool expanded);
     void setNotesFocusMode(bool focused);

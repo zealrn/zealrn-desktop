@@ -58,6 +58,13 @@ constexpr int DefaultSidebarWidth = 180;
 constexpr int DefaultLearningNotesWidth = 410;
 constexpr int MainWindowStateVersion = 1;
 constexpr int MinimumLearningNotesWidth = 300;
+constexpr quint32 ChecklistDocset = 1U << 0U;
+constexpr quint32 ChecklistStartNote = 1U << 1U;
+constexpr quint32 ChecklistDocumentationPage = 1U << 2U;
+constexpr quint32 ChecklistPageNote = 1U << 3U;
+constexpr quint32 ChecklistPlayground = 1U << 4U;
+constexpr quint32 ChecklistTerminal = 1U << 5U;
+constexpr quint32 ChecklistExport = 1U << 6U;
 } // namespace
 
 MainWindow::MainWindow(Core::Application *app, QWidget *parent)
@@ -147,6 +154,12 @@ MainWindow::MainWindow(Core::Application *app, QWidget *parent)
             });
     connect(m_learningNotesPanel, &LearningNotesPanel::expandedModeRequested, this, &MainWindow::setNotesExpanded);
     connect(m_learningNotesPanel, &LearningNotesPanel::focusModeRequested, this, &MainWindow::setNotesFocusMode);
+    connect(m_learningNotesPanel, &LearningNotesPanel::noteSaved, this, [this](const LearningNotePage &page) {
+        completeGettingStartedItem(page.isStartNote() ? ChecklistStartNote : ChecklistPageNote);
+    });
+    connect(m_learningNotesPanel, &LearningNotesPanel::exportCompleted, this, [this]() {
+        completeGettingStartedItem(ChecklistExport);
+    });
 
     // Setup splitter.
     m_splitter->insertWidget(0, sb);
@@ -182,8 +195,27 @@ MainWindow::MainWindow(Core::Application *app, QWidget *parent)
         // TODO: In the future connect directly to the ActionManager.
         if (action == "openDocsetManager") {
             m_showDocsetManagerAction->trigger();
+            if (m_application->docsetRegistry()->count() > 0) {
+                completeGettingStartedItem(ChecklistDocset);
+            }
         } else if (action == "openPreferences") {
             m_showPreferencesAction->trigger();
+        } else if (action == "openStartNote") {
+            m_learningNotesPanel->showStartNote();
+        } else if (action == "openWebPlayground") {
+            showDevelopmentTool(0);
+            completeGettingStartedItem(ChecklistPlayground);
+        } else if (action == "openDeveloperTerminal") {
+            showDevelopmentTool(1);
+            completeGettingStartedItem(ChecklistTerminal);
+        } else if (action == "openQuickTour") {
+            showQuickTour(true);
+        } else if (action == "openAllNotes") {
+            m_learningNotesPanel->showAllNotes();
+        } else if (action == "openNotesHelp") {
+            showHelp(static_cast<int>(HelpDialog::Section::NotesAndBackups));
+        } else if (action == "openHelp") {
+            showHelp(static_cast<int>(HelpDialog::Section::GettingStarted));
         }
     });
 
@@ -371,6 +403,7 @@ void MainWindow::syncLearningNotes()
                                                            docset->baseUrl(),
                                                            url,
                                                            tab->webControl()->title()));
+    completeGettingStartedItem(ChecklistDocumentationPage);
 }
 
 void MainWindow::updateWindowTitle(const QString &pageTitle)
@@ -804,6 +837,15 @@ void MainWindow::showDevelopmentTool(int index)
     m_webPlaygroundDock->show();
     m_webPlaygroundDock->raise();
     updateDevelopmentActions();
+}
+
+void MainWindow::completeGettingStartedItem(quint32 item)
+{
+    if ((m_settings->gettingStartedChecklist & item) != 0U) {
+        return;
+    }
+    m_settings->gettingStartedChecklist |= item;
+    m_settings->save();
 }
 
 void MainWindow::updateDevelopmentActions()
