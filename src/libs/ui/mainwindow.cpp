@@ -192,6 +192,8 @@ MainWindow::MainWindow(Core::Application *app, QWidget *parent)
 MainWindow::~MainWindow()
 {
     m_learningNotesPanel->flush();
+    m_learningNotesPanel->exitFocusMode();
+    m_learningNotesPanel->exitExpandedMode();
     Core::WindowState &windowState = m_application->session()->primaryWindow();
     windowState.mainWindowState = saveState(MainWindowStateVersion);
     windowState.splitterState = m_splitter->saveState();
@@ -991,6 +993,10 @@ void MainWindow::keyPressEvent(QKeyEvent *keyEvent)
     case Qt::Key_Escape:
         if (m_notesFocusMode) {
             m_learningNotesPanel->exitFocusMode();
+            return;
+        }
+        if (!m_notesExpandedSizes.isEmpty()) {
+            m_learningNotesPanel->exitExpandedMode();
             return;
         }
         if (auto *tab = currentTab()) {

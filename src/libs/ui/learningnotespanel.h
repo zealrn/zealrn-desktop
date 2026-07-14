@@ -43,6 +43,7 @@ public:
     bool flush();
     void appendSelection(const QString &selection);
     void exitFocusMode();
+    void exitExpandedMode();
 
 signals:
     void addSelectionRequested();
@@ -84,6 +85,7 @@ private:
     QToolButton *m_exportButton = nullptr;
     QTimer *m_autoSaveTimer = nullptr;
     QTimer *m_previewTimer = nullptr;
+    QAction *m_expandAction = nullptr;
     QAction *m_focusAction = nullptr;
     QString m_lastSelection;
     bool m_dirty = false;

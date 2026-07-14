@@ -30,6 +30,7 @@ private slots:
     void selection_appendsBlockquoteOnce();
     void formatting_preservesUndoHistory();
     void preview_preservesEditorDocument();
+    void preview_doesNotRenderRawHtml();
     void countsAndFind_followEditor();
     void zoomAndLineWrap_followSettings();
     void layoutActions_emitRequestedModes();
@@ -154,6 +155,20 @@ void LearningNotesPanelTest::preview_preservesEditorDocument()
         QStringLiteral("Preview title")));
 }
 
+void LearningNotesPanelTest::preview_doesNotRenderRawHtml()
+{
+    QTemporaryDir dir;
+    LearningNotesPanel panel(dir.filePath(QStringLiteral("notes.sqlite")));
+    QVERIFY(panel.setPage(page(QStringLiteral("unsafe-preview.html"))));
+    panel.findChild<QPlainTextEdit *>(QStringLiteral("noteEditor"))
+        ->setPlainText(QStringLiteral("<script>alert('unsafe')</script>\n<img src=\"file:///etc/passwd\">"));
+
+    panel.findChild<QTabWidget *>(QStringLiteral("noteModeTabs"))->setCurrentIndex(1);
+    const QString rendered = panel.findChild<QTextBrowser *>(QStringLiteral("notePreview"))->toHtml();
+    QVERIFY(!rendered.contains(QStringLiteral("<script"), Qt::CaseInsensitive));
+    QVERIFY(!rendered.contains(QStringLiteral("<img"), Qt::CaseInsensitive));
+}
+
 void LearningNotesPanelTest::countsAndFind_followEditor()
 {
     QTemporaryDir dir;
@@ -208,6 +223,11 @@ void LearningNotesPanelTest::layoutActions_emitRequestedModes()
     QCOMPARE(expanded.takeFirst().constFirst().toBool(), true);
     QCOMPARE(focused.count(), 1);
     QCOMPARE(focused.takeFirst().constFirst().toBool(), true);
+
+    panel.exitFocusMode();
+    panel.exitExpandedMode();
+    QCOMPARE(focused.takeFirst().constFirst().toBool(), false);
+    QCOMPARE(expanded.takeFirst().constFirst().toBool(), false);
 }
 
 QTEST_MAIN(LearningNotesPanelTest)

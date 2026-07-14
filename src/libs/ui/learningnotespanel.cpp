@@ -122,6 +122,7 @@ void LearningNotesPanel::setupUi()
     titleLayout->addStretch();
 
     auto *expandAction = new QAction(tr("Expand Notes"), this);
+    m_expandAction = expandAction;
     expandAction->setObjectName(QStringLiteral("noteExpandAction"));
     expandAction->setCheckable(true);
     expandAction->setToolTip(tr("Give Learning Notes more width"));
@@ -370,7 +371,21 @@ void LearningNotesPanel::setupUi()
             updatePreview();
         }
     });
-    connect(m_preview, &QTextBrowser::anchorClicked, this, [](const QUrl &url) { QDesktopServices::openUrl(url); });
+    connect(m_preview, &QTextBrowser::anchorClicked, this, [this](const QUrl &url) {
+        const QString scheme = url.scheme().toLower();
+        if (!url.isValid()
+            || (scheme != QStringLiteral("http") && scheme != QStringLiteral("https")
+                && scheme != QStringLiteral("mailto"))) {
+            QMessageBox::warning(this, tr("Link Blocked"), tr("This link type cannot be opened from note preview."));
+            return;
+        }
+        if (QMessageBox::question(this,
+                                  tr("Open External Link"),
+                                  tr("Open this link outside ZealRN?\n\n%1").arg(url.toDisplayString()))
+            == QMessageBox::Yes) {
+            QDesktopServices::openUrl(url);
+        }
+    });
     connect(undoAction, &QAction::triggered, m_editor, &QPlainTextEdit::undo);
     connect(redoAction, &QAction::triggered, m_editor, &QPlainTextEdit::redo);
     connect(lineWrapAction, &QAction::toggled, this, &LearningNotesPanel::setLineWrap);
@@ -455,12 +470,19 @@ void LearningNotesPanel::applyFormat(int action)
 
 void LearningNotesPanel::updatePreview()
 {
-    m_preview->document()->setMarkdown(m_editor->toPlainText(), QTextDocument::MarkdownDialectGitHub);
+    QTextDocument::MarkdownFeatures features(QTextDocument::MarkdownDialectGitHub);
+    features.setFlag(QTextDocument::MarkdownNoHTML);
+    m_preview->document()->setMarkdown(m_editor->toPlainText(), features);
 }
 
 void LearningNotesPanel::exitFocusMode()
 {
     m_focusAction->setChecked(false);
+}
+
+void LearningNotesPanel::exitExpandedMode()
+{
+    m_expandAction->setChecked(false);
 }
 
 void LearningNotesPanel::updateCounts()
