@@ -171,8 +171,8 @@ void TerminalView::focusTerminal()
 
 void TerminalView::sendClipboard()
 {
-    const QByteArray data = QApplication::clipboard()->text().toUtf8();
-    emit m_bridge->pasteReceived(QString::fromLatin1(data.toBase64()));
+    const QByteArray bytes = QApplication::clipboard()->text().toUtf8();
+    emit m_bridge->pasteReceived(QString::fromLatin1(bytes.toBase64()));
 }
 
 } // namespace Zeal::WidgetUi
