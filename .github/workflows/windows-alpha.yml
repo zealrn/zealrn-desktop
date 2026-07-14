@@ -91,13 +91,6 @@ jobs:
           Split-Path $makensis | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           & $makensis /VERSION
 
-      - name: Configure and build release
-        uses: lukka/run-cmake@v10
-        with:
-          configurePreset: release
-          buildPreset: release
-          configurePresetAdditionalArgs: "['-DVCPKG_INSTALL_OPTIONS=--x-abi-tools-use-exact-versions']"
-
       - name: Configure and build tests
         uses: lukka/run-cmake@v10
         with:
@@ -115,6 +108,13 @@ jobs:
           $env:PATH = "$vcpkgDebugBin;$vcpkgBin;$env:PATH"
           New-Item $env:APPDATA, $env:LOCALAPPDATA -ItemType Directory -Force | Out-Null
           ctest --preset testing --output-on-failure
+
+      - name: Configure and build release
+        uses: lukka/run-cmake@v10
+        with:
+          configurePreset: release
+          buildPreset: release
+          configurePresetAdditionalArgs: "['-DVCPKG_INSTALL_OPTIONS=--x-abi-tools-use-exact-versions']"
 
       - name: Configure and build portable release
         uses: lukka/run-cmake@v10
