@@ -137,9 +137,9 @@ public:
 
         const COORD size = terminalSize(initialSize);
         const HRESULT pseudoConsoleResult = m_api.create(size, inputRead, outputWrite, 0, &m_pseudoConsole);
-        closeHandle(inputRead);
-        closeHandle(outputWrite);
         if (FAILED(pseudoConsoleResult)) {
+            closeHandle(inputRead);
+            closeHandle(outputWrite);
             closeIoHandles();
             emit errorOccurred(tr("Could not create a Windows terminal: %1").arg(conPtyErrorMessage(pseudoConsoleResult)));
             return false;
@@ -162,6 +162,8 @@ public:
                 DeleteProcThreadAttributeList(attributes);
                 HeapFree(GetProcessHeap(), 0, attributes);
             }
+            closeHandle(inputRead);
+            closeHandle(outputWrite);
             closeIoHandles();
             closePseudoConsole();
             emit errorOccurred(tr("Could not prepare the terminal process: %1").arg(error));
@@ -189,6 +191,8 @@ public:
                                             &startup.StartupInfo,
                                             &process);
         const DWORD createError = created ? ERROR_SUCCESS : GetLastError();
+        closeHandle(inputRead);
+        closeHandle(outputWrite);
         DeleteProcThreadAttributeList(attributes);
         HeapFree(GetProcessHeap(), 0, attributes);
         if (!created) {
