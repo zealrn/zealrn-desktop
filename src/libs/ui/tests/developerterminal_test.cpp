@@ -28,8 +28,10 @@ private slots:
     void validatedShell_keepsAvailableChoice();
     void validatedShell_fallsBackToFirstAvailable();
     void terminalProfiles_labelLinuxShells();
+    void terminalProfiles_configureWindowsShells();
     void validatedTerminalProfile_fallsBackSafely();
     void terminalFontSize_isBounded();
+    void windowsCommandLine_quotesArguments();
     void validatedWorkingDirectory_usesSafeFallbackOrder();
     void bottomToolFromValue_rejectsInvalidValue();
     void linuxExternalTerminal_buildsSeparateArguments();
@@ -73,6 +75,19 @@ void DeveloperTerminalTest::terminalProfiles_labelLinuxShells()
     QCOMPARE(profiles.at(0).program, QStringLiteral("/bin/bash"));
 }
 
+void DeveloperTerminalTest::terminalProfiles_configureWindowsShells()
+{
+    const auto profiles = terminalProfiles(Platform::Windows,
+                                           {QStringLiteral("C:/Apps/pwsh.exe"),
+                                            QStringLiteral("C:/Windows/System32/cmd.exe"),
+                                            QStringLiteral("C:/Program Files/Git/bin/bash.exe")});
+
+    QCOMPARE(profiles.at(0).label, QStringLiteral("PowerShell 7"));
+    QCOMPARE(profiles.at(1).label, QStringLiteral("Command Prompt"));
+    QCOMPARE(profiles.at(2).label, QStringLiteral("Git Bash"));
+    QCOMPARE(profiles.at(2).arguments, QStringList({QStringLiteral("--login"), QStringLiteral("-i")}));
+}
+
 void DeveloperTerminalTest::validatedTerminalProfile_fallsBackSafely()
 {
     const auto profiles = terminalProfiles(Platform::Linux,
@@ -89,6 +104,21 @@ void DeveloperTerminalTest::terminalFontSize_isBounded()
     QCOMPARE(clampTerminalFontSize(1), 10);
     QCOMPARE(clampTerminalFontSize(14), 14);
     QCOMPARE(clampTerminalFontSize(99), 28);
+}
+
+void DeveloperTerminalTest::windowsCommandLine_quotesArguments()
+{
+    const Zeal::WidgetUi::TerminalProfile profile = {QStringLiteral("pwsh"),
+                                                     QStringLiteral("PowerShell"),
+                                                     QStringLiteral("C:\\Program Files\\PowerShell\\pwsh.exe"),
+                                                     {QStringLiteral("-NoLogo"),
+                                                      QStringLiteral("two words"),
+                                                      QStringLiteral("quote\"inside"),
+                                                      QStringLiteral("C:\\trailing slash\\")}};
+
+    QCOMPARE(windowsCommandLine(profile),
+             QStringLiteral("\"C:\\Program Files\\PowerShell\\pwsh.exe\" -NoLogo \"two words\" "
+                            "\"quote\\\"inside\" \"C:\\trailing slash\\\\\""));
 }
 
 void DeveloperTerminalTest::validatedWorkingDirectory_usesSafeFallbackOrder()

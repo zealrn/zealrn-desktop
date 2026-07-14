@@ -7,6 +7,8 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QProcessEnvironment>
+#include <QRegularExpression>
+#include <QSettings>
 #include <QStandardPaths>
 #include <QTextStream>
 
@@ -32,6 +34,32 @@ void appendExecutable(QStringList &shells, const QString &path)
     }
 }
 
+QString quoteWindowsArgument(const QString &argument)
+{
+    if (!argument.isEmpty() && !argument.contains(QRegularExpression(QStringLiteral("[\\s\"]")))) {
+        return argument;
+    }
+
+    QString quoted(QLatin1Char('"'));
+    int backslashes = 0;
+    for (const QChar character : argument) {
+        if (character == QLatin1Char('\\')) {
+            ++backslashes;
+        } else if (character == QLatin1Char('"')) {
+            quoted += QString(backslashes * 2 + 1, QLatin1Char('\\'));
+            quoted += character;
+            backslashes = 0;
+        } else {
+            quoted += QString(backslashes, QLatin1Char('\\'));
+            quoted += character;
+            backslashes = 0;
+        }
+    }
+    quoted += QString(backslashes * 2, QLatin1Char('\\'));
+    quoted += QLatin1Char('"');
+    return quoted;
+}
+
 } // namespace
 
 QStringList availableShells()
@@ -41,6 +69,19 @@ QStringList availableShells()
 #ifdef Q_OS_WINDOWS
     for (const QString &name : {QStringLiteral("pwsh.exe"), QStringLiteral("powershell.exe"), QStringLiteral("cmd.exe")}) {
         appendExecutable(shells, QStandardPaths::findExecutable(name));
+    }
+    appendExecutable(shells, QStandardPaths::findExecutable(QStringLiteral("bash.exe")));
+
+    for (const QString &key : {QStringLiteral("HKEY_CURRENT_USER\\SOFTWARE\\GitForWindows"),
+                               QStringLiteral("HKEY_LOCAL_MACHINE\\SOFTWARE\\GitForWindows"),
+                               QStringLiteral("HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\GitForWindows")}) {
+        QSettings registry(key, QSettings::NativeFormat);
+        appendExecutable(shells, QDir(registry.value(QStringLiteral("InstallPath")).toString()).filePath(QStringLiteral("bin/bash.exe")));
+    }
+    for (const QString &root : {qEnvironmentVariable("ProgramFiles"),
+                                qEnvironmentVariable("ProgramFiles(x86)"),
+                                qEnvironmentVariable("LOCALAPPDATA") + QStringLiteral("/Programs")}) {
+        appendExecutable(shells, QDir(root).filePath(QStringLiteral("Git/bin/bash.exe")));
     }
 #else
     appendExecutable(shells, QProcessEnvironment::systemEnvironment().value(QStringLiteral("SHELL")));
@@ -97,7 +138,10 @@ QList<TerminalProfile> terminalProfiles(Platform platform, const QStringList &sh
                 label = QStringLiteral("Git Bash");
             }
         }
-        profiles.append({shell, label, shell, {}});
+        const QStringList arguments = label == QStringLiteral("Git Bash")
+            ? QStringList({QStringLiteral("--login"), QStringLiteral("-i")})
+            : QStringList();
+        profiles.append({shell, label, shell, arguments});
     }
     return profiles;
 }
@@ -126,6 +170,16 @@ TerminalProfile validatedTerminalProfile(const QString &savedId, const QList<Ter
 int clampTerminalFontSize(int size)
 {
     return qBound(10, size, 28);
+}
+
+QString windowsCommandLine(const TerminalProfile &profile)
+{
+    QStringList command = {profile.program};
+    command.append(profile.arguments);
+    for (QString &argument : command) {
+        argument = quoteWindowsArgument(argument);
+    }
+    return command.join(QLatin1Char(' '));
 }
 
 QString validatedWorkingDirectory(const QString &savedDirectory,

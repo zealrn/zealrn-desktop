@@ -35,6 +35,7 @@ QList<TerminalProfile> terminalProfiles(Platform platform, const QStringList &sh
 QList<TerminalProfile> availableTerminalProfiles();
 TerminalProfile validatedTerminalProfile(const QString &savedId, const QList<TerminalProfile> &profiles);
 int clampTerminalFontSize(int size);
+QString windowsCommandLine(const TerminalProfile &profile);
 QString validatedWorkingDirectory(const QString &savedDirectory,
                                   const QString &homeDirectory,
                                   const QString &workspaceDirectory);
