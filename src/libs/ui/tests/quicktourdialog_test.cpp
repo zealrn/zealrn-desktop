@@ -22,6 +22,7 @@ void QuickTourDialogTest::exposesCompleteTourAndActions()
     QuickTourDialog dialog;
     QCOMPARE(dialog.pageIds().size(), 7);
     QVERIFY(dialog.doNotShowAutomatically());
+    QCOMPARE(dialog.buttonText(QWizard::CancelButton), QStringLiteral("Skip"));
 
     QSignalSpy docsetsSpy(&dialog, &QuickTourDialog::openDocsetLibraryRequested);
     QSignalSpy startNoteSpy(&dialog, &QuickTourDialog::openStartNoteRequested);

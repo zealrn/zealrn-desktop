@@ -32,6 +32,7 @@ QuickTourDialog::QuickTourDialog(QWidget *parent)
     setWizardStyle(QWizard::ModernStyle);
     setMinimumSize(620, 430);
     setOption(QWizard::NoBackButtonOnStartPage);
+    setButtonText(QWizard::CancelButton, tr("Skip"));
 
     auto *welcome = makePage(tr("Welcome to ZealRN"),
                          tr("Read offline documentation, take page-linked notes, try web examples, and use your "
