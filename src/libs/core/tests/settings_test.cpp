@@ -24,6 +24,7 @@ private slots:
     void qsettingsRestoresAfterReopen_data();
     void qsettingsRestoresAfterReopen();
     void terminalSettingsRestoreAfterReopen();
+    void terminalAutoStartDefaultsOn();
     void invalidTerminalFontSizeIsClamped();
     void invalidBottomToolFallsBackToWebPlayground();
     void noteEditorSettingsRestoreAfterReopen();
@@ -119,6 +120,7 @@ void SettingsTest::terminalSettingsRestoreAfterReopen()
         settings.terminalShell = QStringLiteral("/bin/zsh");
         settings.terminalWorkingDirectory = QStringLiteral("/home/test/work");
         settings.terminalFontSize = 18;
+        settings.terminalStartOnOpen = false;
         settings.bottomDevelopmentTool = 1;
         settings.save();
     }
@@ -128,7 +130,18 @@ void SettingsTest::terminalSettingsRestoreAfterReopen()
     QCOMPARE(restored.terminalShell, QStringLiteral("/bin/zsh"));
     QCOMPARE(restored.terminalWorkingDirectory, QStringLiteral("/home/test/work"));
     QCOMPARE(restored.terminalFontSize, 18);
+    QVERIFY(!restored.terminalStartOnOpen);
     QCOMPARE(restored.bottomDevelopmentTool, 1);
+}
+
+void SettingsTest::terminalAutoStartDefaultsOn()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, dir.path());
+
+    Settings settings;
+    QVERIFY(settings.terminalStartOnOpen);
 }
 
 void SettingsTest::invalidTerminalFontSizeIsClamped()

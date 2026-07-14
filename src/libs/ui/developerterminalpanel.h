@@ -44,6 +44,8 @@ private:
     bool acknowledgeSafety();
     void ensureBackend();
     void startSession();
+    void startSession(bool confirmReplacement);
+    void startPendingSession();
     void chooseWorkingDirectory();
     void openExternalTerminal();
     void applyAppearance();
@@ -67,6 +69,8 @@ private:
     QPushButton *m_clearButton = nullptr;
     QPushButton *m_copyButton = nullptr;
     QPushButton *m_pasteButton = nullptr;
+    bool m_autoStartPending = false;
+    bool m_sessionAttempted = false;
 };
 
 } // namespace WidgetUi

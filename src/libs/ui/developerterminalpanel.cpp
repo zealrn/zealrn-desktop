@@ -24,6 +24,7 @@
 #include <QPushButton>
 #include <QShowEvent>
 #include <QStandardPaths>
+#include <QTimer>
 #include <QUrl>
 #include <QVBoxLayout>
 
@@ -131,7 +132,7 @@ DeveloperTerminalPanel::DeveloperTerminalPanel(Core::Settings *settings, QWidget
     m_copyButton->setEnabled(false);
     m_pasteButton->setEnabled(false);
 
-    connect(m_newSessionButton, &QPushButton::clicked, this, &DeveloperTerminalPanel::startSession);
+    connect(m_newSessionButton, &QPushButton::clicked, this, [this]() { startSession(); });
     connect(m_stopButton, &QPushButton::clicked, this, [this]() { m_terminalView->terminate(); });
     connect(workingDirectoryButton, &QPushButton::clicked, this, &DeveloperTerminalPanel::chooseWorkingDirectory);
     connect(m_clearButton, &QPushButton::clicked, this, [this]() { m_terminalView->clear(); });
@@ -170,8 +171,11 @@ void DeveloperTerminalPanel::showEvent(QShowEvent *event)
 {
     QWidget::showEvent(event);
     ensureBackend();
-    if (m_terminalView) {
+    if (m_backend && m_backend->isRunning() && m_terminalView) {
         m_terminalView->focusTerminal();
+    } else if (m_backend && m_backend->isAvailable() && m_settings->terminalStartOnOpen && !m_sessionAttempted) {
+        m_autoStartPending = true;
+        QTimer::singleShot(0, this, &DeveloperTerminalPanel::startPendingSession);
     }
 }
 
@@ -204,7 +208,10 @@ void DeveloperTerminalPanel::ensureBackend()
 
     m_backend = createTerminalBackend(this);
     connect(m_backend.get(), &TerminalBackend::started, this, [this](const TerminalProfile &) {
+        m_sessionAttempted = true;
         updateStatus(tr("Running"));
+        m_newSessionButton->setText(tr("New Session"));
+        m_backendMessage->hide();
         m_stopButton->setEnabled(true);
         m_clearButton->setEnabled(true);
         m_searchButton->setEnabled(true);
@@ -212,7 +219,8 @@ void DeveloperTerminalPanel::ensureBackend()
         m_pasteButton->setEnabled(true);
     });
     connect(m_backend.get(), &TerminalBackend::exited, this, [this](int exitCode, bool available) {
-        updateStatus(available ? tr("Exited (%1)").arg(exitCode) : tr("Exited"));
+        updateStatus(available ? tr("Session exited (%1)").arg(exitCode) : tr("Session exited"));
+        m_newSessionButton->setText(tr("Restart Session"));
         m_stopButton->setEnabled(false);
         m_clearButton->setEnabled(false);
         m_searchButton->setEnabled(false);
@@ -220,8 +228,11 @@ void DeveloperTerminalPanel::ensureBackend()
         m_pasteButton->setEnabled(false);
     });
     connect(m_backend.get(), &TerminalBackend::errorOccurred, this, [this](const QString &message) {
+        m_sessionAttempted = true;
         updateStatus(tr("Error"));
         m_backendMessage->setText(message);
+        m_backendMessage->show();
+        m_newSessionButton->setText(tr("Retry"));
     });
 
     if (m_backend->isAvailable()) {
@@ -229,6 +240,7 @@ void DeveloperTerminalPanel::ensureBackend()
         m_terminalView->setObjectName(QStringLiteral("terminalView"));
         m_backendMessage->hide();
         m_terminalLayout->addWidget(m_terminalView);
+        connect(m_terminalView, &TerminalView::ready, this, &DeveloperTerminalPanel::startPendingSession);
     } else {
         m_backendMessage->setText(m_backend->unavailableReason());
     }
@@ -240,6 +252,11 @@ void DeveloperTerminalPanel::ensureBackend()
 
 void DeveloperTerminalPanel::startSession()
 {
+    startSession(true);
+}
+
+void DeveloperTerminalPanel::startSession(bool confirmReplacement)
+{
     ensureBackend();
     if (!m_backend->isAvailable()) {
         updateStatus(tr("Embedded terminal unavailable"));
@@ -248,7 +265,7 @@ void DeveloperTerminalPanel::startSession()
     if (!acknowledgeSafety()) {
         return;
     }
-    if (m_backend->isRunning()
+    if (confirmReplacement && m_backend->isRunning()
         && QMessageBox::question(this,
                                  tr("Replace Terminal Session"),
                                  tr("Replace the running terminal session?"),
@@ -262,6 +279,8 @@ void DeveloperTerminalPanel::startSession()
         m_backend->terminate();
     }
 
+    m_autoStartPending = false;
+    m_sessionAttempted = true;
     m_settings->terminalShell = m_shell->currentData().toString();
     m_settings->terminalWorkingDirectory = m_workingDirectory;
     m_settings->save();
@@ -269,9 +288,24 @@ void DeveloperTerminalPanel::startSession()
                                                                                TerminalSupport::availableTerminalProfiles());
     if (!m_terminalView->start(profile, m_workingDirectory)) {
         updateStatus(tr("Failed to start"));
+        m_backendMessage->setText(tr("The selected shell could not be started."));
+        m_backendMessage->show();
+        m_newSessionButton->setText(tr("Retry"));
     } else {
         m_terminalView->focusTerminal();
     }
+}
+
+void DeveloperTerminalPanel::startPendingSession()
+{
+    if (!m_autoStartPending || !m_terminalView || !m_terminalView->isReady() || m_backend->isRunning()) {
+        return;
+    }
+    if (!acknowledgeSafety()) {
+        m_autoStartPending = false;
+        return;
+    }
+    startSession(false);
 }
 
 void DeveloperTerminalPanel::chooseWorkingDirectory()

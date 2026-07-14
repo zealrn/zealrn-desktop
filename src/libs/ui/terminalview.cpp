@@ -106,8 +106,10 @@ TerminalView::TerminalView(TerminalBackend *backend, QWidget *parent)
     });
     connect(m_bridge, &TerminalBridge::pasteRequested, this, &TerminalView::sendClipboard);
     connect(m_bridge, &TerminalBridge::ready, this, [this]() {
+        m_ready = true;
         emit m_bridge->themeChanged(m_dark ? QStringLiteral("dark") : QStringLiteral("light"));
         emit m_bridge->fontSizeChanged(m_fontSize);
+        emit ready();
         focusTerminal();
     });
 
@@ -173,6 +175,11 @@ void TerminalView::setFontSize(int size)
 void TerminalView::focusTerminal()
 {
     emit m_bridge->focusRequested();
+}
+
+bool TerminalView::isReady() const
+{
+    return m_ready;
 }
 
 void TerminalView::sendClipboard()

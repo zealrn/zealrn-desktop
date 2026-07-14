@@ -46,6 +46,7 @@ private slots:
     void terminalView_allowsOnlyLocalAssets();
     void terminalFrontend_allowsOnlyRequiredInlineStyles();
     void terminalPanel_startsLazyWithSessionControls();
+    void terminalPanel_startsOneSessionWhenShown();
 };
 
 void DeveloperTerminalTest::validatedShell_keepsAvailableChoice()
@@ -299,6 +300,43 @@ void DeveloperTerminalTest::terminalPanel_startsLazyWithSessionControls()
     const auto *fontSize = panel.findChild<QLabel *>(QStringLiteral("terminalFontSize"));
     QVERIFY(fontSize);
     QVERIFY(fontSize->text().contains(QString::number(settings.terminalFontSize)));
+}
+
+void DeveloperTerminalTest::terminalPanel_startsOneSessionWhenShown()
+{
+#ifndef ZEALRN_HAVE_POSIX_PTY
+    QSKIP("Embedded terminal is unavailable on this platform.");
+#else
+    QTemporaryDir settingsDirectory;
+    QVERIFY(settingsDirectory.isValid());
+    QSettings::setDefaultFormat(QSettings::IniFormat);
+    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, settingsDirectory.path());
+    QCoreApplication::setOrganizationName(QStringLiteral("ZealTerminalAutoStartTest"));
+    QCoreApplication::setApplicationName(QStringLiteral("ZealTerminalAutoStartTest"));
+    Zeal::Core::Settings settings;
+    settings.terminalSafetyAcknowledged = true;
+    settings.terminalStartOnOpen = true;
+
+    Zeal::WidgetUi::DeveloperTerminalPanel panel(&settings);
+    panel.resize(900, 500);
+    panel.show();
+
+    QTRY_VERIFY_WITH_TIMEOUT(panel.findChild<Zeal::WidgetUi::TerminalBackend *>() != nullptr, 3000);
+    auto *backend = panel.findChild<Zeal::WidgetUi::TerminalBackend *>();
+    auto *bridge = panel.findChild<Zeal::WidgetUi::TerminalBridge *>();
+    QVERIFY(bridge);
+    QSignalSpy started(backend, &Zeal::WidgetUi::TerminalBackend::started);
+    QVERIFY(!backend->isRunning());
+    bridge->frontendReady();
+    QTRY_VERIFY_WITH_TIMEOUT(backend->isRunning(), 10000);
+    QCOMPARE(started.count(), 1);
+
+    panel.hide();
+    panel.show();
+    QTest::qWait(250);
+    QVERIFY(backend->isRunning());
+    QCOMPARE(started.count(), 1);
+#endif
 }
 
 QTEST_MAIN(DeveloperTerminalTest)

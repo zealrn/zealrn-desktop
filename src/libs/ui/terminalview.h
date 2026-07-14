@@ -38,6 +38,10 @@ public:
     void setDark(bool dark);
     void setFontSize(int size);
     void focusTerminal();
+    bool isReady() const;
+
+signals:
+    void ready();
 
 private:
     void sendClipboard();
@@ -50,6 +54,7 @@ private:
     QSize m_terminalSize = QSize(80, 24);
     int m_fontSize = 14;
     bool m_dark = false;
+    bool m_ready = false;
 };
 
 } // namespace Zeal::WidgetUi

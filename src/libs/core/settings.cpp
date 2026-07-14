@@ -155,6 +155,7 @@ void Settings::load()
     hideMenuBar = settings->value(QStringLiteral("hide_menu_bar"), false).toBool();
     hideSidebar = settings->value(QStringLiteral("hide_sidebar"), false).toBool();
     terminalSafetyAcknowledged = settings->value(QStringLiteral("terminal_safety_acknowledged"), false).toBool();
+    terminalStartOnOpen = settings->value(QStringLiteral("terminal_start_on_open"), true).toBool();
     terminalShell = settings->value(QStringLiteral("terminal_shell")).toString();
     terminalWorkingDirectory = settings->value(QStringLiteral("terminal_working_directory")).toString();
     terminalFontSize = qBound(10, settings->value(QStringLiteral("terminal_font_size"), 14).toInt(), 28);
@@ -328,6 +329,7 @@ void Settings::save()
     settings->setValue(QStringLiteral("hide_menu_bar"), hideMenuBar);
     settings->setValue(QStringLiteral("hide_sidebar"), hideSidebar);
     settings->setValue(QStringLiteral("terminal_safety_acknowledged"), terminalSafetyAcknowledged);
+    settings->setValue(QStringLiteral("terminal_start_on_open"), terminalStartOnOpen);
     settings->setValue(QStringLiteral("terminal_shell"), terminalShell);
     settings->setValue(QStringLiteral("terminal_working_directory"), terminalWorkingDirectory);
     settings->setValue(QStringLiteral("terminal_font_size"), terminalFontSize);

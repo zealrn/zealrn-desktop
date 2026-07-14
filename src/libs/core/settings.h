@@ -29,6 +29,7 @@ public:
     bool hideMenuBar;
     bool hideSidebar;
     bool terminalSafetyAcknowledged;
+    bool terminalStartOnOpen;
     QString terminalShell;
     QString terminalWorkingDirectory;
     int terminalFontSize;
