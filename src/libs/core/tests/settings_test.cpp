@@ -26,6 +26,8 @@ private slots:
     void terminalSettingsRestoreAfterReopen();
     void invalidTerminalFontSizeIsClamped();
     void invalidBottomToolFallsBackToWebPlayground();
+    void noteEditorSettingsRestoreAfterReopen();
+    void invalidNoteZoomIsClamped();
     void sharedDocsetSettingRestoresAfterReopen();
     void existingZealDocsetPathsFindsNativeAndFlatpakLibraries();
 };
@@ -159,6 +161,38 @@ void SettingsTest::invalidBottomToolFallsBackToWebPlayground()
 
     Settings settings;
     QCOMPARE(settings.bottomDevelopmentTool, 0);
+}
+
+void SettingsTest::noteEditorSettingsRestoreAfterReopen()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, dir.path());
+
+    {
+        Settings settings;
+        settings.learningNotesZoom = 145;
+        settings.learningNotesLineWrap = false;
+        settings.save();
+    }
+
+    Settings restored;
+    QCOMPARE(restored.learningNotesZoom, 145);
+    QVERIFY(!restored.learningNotesLineWrap);
+}
+
+void SettingsTest::invalidNoteZoomIsClamped()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, dir.path());
+
+    QSettings settings;
+    settings.setValue(QStringLiteral("ui/learning_notes_zoom"), 500);
+    settings.sync();
+
+    Settings restored;
+    QCOMPARE(restored.learningNotesZoom, 200);
 }
 
 void SettingsTest::sharedDocsetSettingRestoresAfterReopen()

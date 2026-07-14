@@ -162,6 +162,8 @@ void Settings::load()
     if (bottomDevelopmentTool != 0 && bottomDevelopmentTool != 1) {
         bottomDevelopmentTool = 0;
     }
+    learningNotesZoom = qBound(80, settings->value(QStringLiteral("learning_notes_zoom"), 115).toInt(), 200);
+    learningNotesLineWrap = settings->value(QStringLiteral("learning_notes_line_wrap"), true).toBool();
     settings->endGroup();
 
     settings->beginGroup(GroupGlobalShortcuts);
@@ -330,6 +332,8 @@ void Settings::save()
     settings->setValue(QStringLiteral("terminal_working_directory"), terminalWorkingDirectory);
     settings->setValue(QStringLiteral("terminal_font_size"), terminalFontSize);
     settings->setValue(QStringLiteral("bottom_development_tool"), bottomDevelopmentTool);
+    settings->setValue(QStringLiteral("learning_notes_zoom"), learningNotesZoom);
+    settings->setValue(QStringLiteral("learning_notes_line_wrap"), learningNotesLineWrap);
     settings->endGroup();
 
     settings->beginGroup(GroupGlobalShortcuts);

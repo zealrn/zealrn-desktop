@@ -33,6 +33,8 @@ public:
     QString terminalWorkingDirectory;
     int terminalFontSize;
     int bottomDevelopmentTool;
+    int learningNotesZoom;
+    bool learningNotesLineWrap;
     // TODO: bool restoreLastState;
 
     // System Tray
