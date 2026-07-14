@@ -29,7 +29,7 @@ if(WIN32)
             destructionTerminatesProcessTree
             destructionWithPendingOutputDoesNotDeadlock)
         set(test_name "windowsterminalbackend_${test_case}")
-        add_test(NAME ${test_name} COMMAND windowsterminalbackend_test ${test_case})
+        add_test(NAME ${test_name} COMMAND windowsterminalbackend_test ${test_case} -v2)
         set_tests_properties(${test_name} PROPERTIES
             TIMEOUT 15
             ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:$<TARGET_FILE_DIR:Qt6::Core>"
