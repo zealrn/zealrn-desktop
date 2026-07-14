@@ -323,14 +323,8 @@ private:
                     return;
                 }
                 const QByteArray data(buffer, static_cast<qsizetype>(count));
-                const bool queued = QMetaObject::invokeMethod(
-                    this,
-                    [this, data]() { emit outputReceived(data); },
-                    Qt::QueuedConnection);
-                std::fprintf(stderr,
-                             "[conpty] read: %lu bytes; signal queued: %d\n",
-                             count,
-                             queued ? 1 : 0);
+                emit outputReceived(data);
+                std::fprintf(stderr, "[conpty] read and emitted: %lu bytes\n", count);
                 std::fflush(stderr);
             }
         });
