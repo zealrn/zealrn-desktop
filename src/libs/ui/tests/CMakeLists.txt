@@ -22,8 +22,19 @@ endif()
 if(WIN32)
     add_executable(windowsterminalbackend_test windowsterminalbackend_test.cpp)
     target_link_libraries(windowsterminalbackend_test PRIVATE Ui Core Qt6::Test)
-    zeal_add_test(windowsterminalbackend_test)
-    set_tests_properties(windowsterminalbackend_test PROPERTIES TIMEOUT 45)
+    foreach(test_case IN ITEMS
+            runsCmdWithWorkingDirectoryAndExitCode
+            resizesAndInterruptsCmd
+            preservesPowerShellUnicode
+            destructionTerminatesProcessTree
+            destructionWithPendingOutputDoesNotDeadlock)
+        set(test_name "windowsterminalbackend_${test_case}")
+        add_test(NAME ${test_name} COMMAND windowsterminalbackend_test ${test_case})
+        set_tests_properties(${test_name} PROPERTIES
+            TIMEOUT 15
+            ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:$<TARGET_FILE_DIR:Qt6::Core>"
+        )
+    endforeach()
 endif()
 
 add_executable(learningnotesstore_test learningnotesstore_test.cpp)

@@ -43,7 +43,6 @@ private slots:
 
 void WindowsTerminalBackendTest::runsCmdWithWorkingDirectoryAndExitCode()
 {
-    qInfo("starting cmd working-directory test");
     QTemporaryDir directory;
     QVERIFY(directory.isValid());
     auto backend = createTerminalBackend();
@@ -65,12 +64,10 @@ void WindowsTerminalBackendTest::runsCmdWithWorkingDirectoryAndExitCode()
                              3000);
     QCOMPARE(exited.first().at(0).toInt(), 7);
     QVERIFY(exited.first().at(1).toBool());
-    qInfo("cmd working-directory assertions completed");
 }
 
 void WindowsTerminalBackendTest::resizesAndInterruptsCmd()
 {
-    qInfo("starting resize and interrupt test");
     auto backend = createTerminalBackend();
     QByteArray output;
     connect(backend.get(), &TerminalBackend::outputReceived, this, [&output](const QByteArray &data) {
@@ -93,12 +90,10 @@ void WindowsTerminalBackendTest::resizesAndInterruptsCmd()
 
     QTRY_COMPARE_WITH_TIMEOUT(exited.count(), 1, 10000);
     QVERIFY(output.contains("INTERRUPTED"));
-    qInfo("resize and interrupt assertions completed");
 }
 
 void WindowsTerminalBackendTest::preservesPowerShellUnicode()
 {
-    qInfo("starting PowerShell Unicode test");
     const QString powershell = QStandardPaths::findExecutable(QStringLiteral("pwsh.exe"));
     if (powershell.isEmpty()) {
         QSKIP("PowerShell 7 is unavailable");
@@ -124,12 +119,10 @@ void WindowsTerminalBackendTest::preservesPowerShellUnicode()
     QVERIFY(backend->start(profile, QDir::homePath(), QSize(80, 24)));
     QTRY_COMPARE_WITH_TIMEOUT(exited.count(), 1, 10000);
     QTRY_VERIFY_WITH_TIMEOUT(output.contains(expected.toUtf8()), 3000);
-    qInfo("PowerShell Unicode assertions completed");
 }
 
 void WindowsTerminalBackendTest::destructionTerminatesProcessTree()
 {
-    qInfo("starting process-tree destruction test");
     QTemporaryDir directory;
     QVERIFY(directory.isValid());
     const QString pidPath = directory.filePath(QStringLiteral("processes.pid"));
@@ -171,9 +164,7 @@ void WindowsTerminalBackendTest::destructionTerminatesProcessTree()
         QVERIFY(process != nullptr);
         processes.append(process);
     }
-    qInfo("destroying process-tree backend");
     backend.reset();
-    qInfo("process-tree backend destroyed");
 
     for (HANDLE process : processes) {
         QCOMPARE(WaitForSingleObject(process, 5000), DWORD(WAIT_OBJECT_0));
@@ -183,7 +174,6 @@ void WindowsTerminalBackendTest::destructionTerminatesProcessTree()
 
 void WindowsTerminalBackendTest::destructionWithPendingOutputDoesNotDeadlock()
 {
-    qInfo("starting pending-output destruction test");
     auto backend = createTerminalBackend();
     QByteArray output;
     connect(backend.get(), &TerminalBackend::outputReceived, this, [&output](const QByteArray &data) {
@@ -197,9 +187,7 @@ void WindowsTerminalBackendTest::destructionWithPendingOutputDoesNotDeadlock()
 
     QElapsedTimer timer;
     timer.start();
-    qInfo("destroying pending-output backend");
     backend.reset();
-    qInfo("pending-output backend destroyed");
     QVERIFY2(timer.elapsed() < 5000, "ConPTY shutdown blocked while output was pending");
 }
 
