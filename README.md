@@ -6,9 +6,10 @@ ZealRN is an offline documentation learning tool:
 
 It is based on [Zeal](https://github.com/zealdocs/zeal) and keeps Zeal's fast offline docset browsing while adding page-linked learning notes, an offline HTML/CSS/JavaScript playground, application appearance settings, and developer-terminal integration.
 
-## Alpha Features
+## Features
 
 - Browse and search installed Dash/Zeal docsets offline.
+- Write a persistent Start Note before opening documentation.
 - Save one local plain-text note per documentation page.
 - Autosave notes and capture selected documentation text as a Markdown blockquote.
 - Search, edit, delete, and reopen notes from All Notes.
@@ -17,6 +18,7 @@ It is based on [Zeal](https://github.com/zealdocs/zeal) and keeps Zeal's fast of
 - Experiment with HTML, CSS, and JavaScript in an isolated, network-blocked preview.
 - Use System, Light, or Dark appearance.
 - Use an embedded developer terminal powered by bundled xterm.js and a native Linux PTY. Windows uses safe external-terminal launching.
+- Follow the first-run Quick Tour or reopen offline guidance from Help.
 
 ## Install
 
@@ -40,14 +42,14 @@ Uninstall the application without deleting settings, notes, exports, or docsets:
 ### Portable AppImage
 
 ```bash
-chmod +x dist/ZealRN-0.1.0-alpha-x86_64.AppImage
-./dist/ZealRN-0.1.0-alpha-x86_64.AppImage
+chmod +x dist/ZealRN-0.1.0-x86_64.AppImage
+./dist/ZealRN-0.1.0-x86_64.AppImage
 ```
 
 ### Debian Package
 
 ```bash
-sudo apt install ./dist/zealrn_0.1.0-alpha_amd64.deb
+sudo apt install ./dist/zealrn_0.1.0_amd64.deb
 ```
 
 The Debian package is not installed automatically by the build or user-local installer.
@@ -65,7 +67,7 @@ On first launch, ZealRN can reuse a native or Flatpak Zeal docset directory with
 
 ## Learning Notes
 
-Open a real docset page, write in **Learning Notes**, and use **Save Note** or `Ctrl+S`. Autosave runs after a short pause. **Add Selection** appends selected documentation text without executing or modifying it.
+Use **Start Note** as an always-available scratchpad. Open a real docset page to switch to its page-linked note, then use **Save Note** or `Ctrl+S`. Autosave runs after a short pause. **Add Selection** appends selected documentation text without executing or modifying it.
 
 **All Notes** searches page title, docset, relative path, and content. Export actions never overwrite a file without confirmation. PDF exports contain selectable/searchable text rather than screenshots.
 
@@ -117,14 +119,23 @@ npm run bundle
 
 Do not commit `node_modules` or generated release artifacts.
 
+## Documentation
+
+- [Getting started and shortcuts](docs/getting-started.md)
+- [Learning Notes](docs/learning-notes.md)
+- [Developer Terminal](docs/developer-terminal.md)
+- [Backups and exports](docs/backups-and-exports.md)
+- [Linux testing](docs/releases/0.1.0-linux-testing.md)
+- [Windows testing](docs/releases/0.1.0-windows-testing.md)
+
 ## Known Limitations
 
-- This is an alpha release with one main note per documentation page.
+- This release provides one main note per documentation page.
 - Notes are local only; there are no accounts, sync, sharing, or cloud services.
 - AppImage targets a normal x86_64 Linux desktop and expects baseline system libraries such as glibc and XCB.
-- The embedded Linux terminal has normal user-shell access and is not sandboxed. Windows builds launch an external terminal because the alpha does not include an embedded ConPTY backend.
+- The embedded Linux terminal has normal user-shell access and is not sandboxed. Windows builds launch an external terminal because this release does not include an embedded ConPTY backend.
 - On Qt 6.4-6.6, changing appearance may require restarting ZealRN before downloaded documentation pages change theme.
-- Windows packages are unsigned alpha builds; SmartScreen may warn until code signing is configured.
+- Windows packages are unsigned builds; SmartScreen may warn until code signing is configured.
 
 ## License And Attribution
 
