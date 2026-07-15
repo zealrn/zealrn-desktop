@@ -14,6 +14,7 @@
 
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -313,6 +314,44 @@ QString Docset::documentPath() const
 bool Docset::isArchived() const
 {
     return m_tarixArchive != nullptr;
+}
+
+bool Docset::isSafeDocumentPath(const QString &path)
+{
+    if (path.isEmpty() || QDir::isAbsolutePath(path) || path.startsWith(QLatin1Char('/'))
+        || path.startsWith(QLatin1Char('\\'))
+        || QRegularExpression(QStringLiteral("^[A-Za-z]:[/\\\\]")).match(path).hasMatch()) {
+        return false;
+    }
+
+    const QStringList components = path.split(QRegularExpression(QStringLiteral("[/\\\\]")), Qt::KeepEmptyParts);
+    if (components.contains(QStringLiteral(".."))) {
+        return false;
+    }
+
+    const QString normalized = QDir::cleanPath(path);
+    return normalized != QLatin1String(".") && !normalized.startsWith(QLatin1String("../"));
+}
+
+bool Docset::hasDocument(const QString &path) const
+{
+    if (!isSafeDocumentPath(path)) {
+        return false;
+    }
+
+    if (m_tarixArchive != nullptr) {
+        return m_tarixArchive->exists(DocumentsPath + path);
+    }
+
+    const QFileInfo rootInfo(documentPath());
+    const QFileInfo fileInfo(QDir(documentPath()).filePath(path));
+    if (!fileInfo.exists() || !fileInfo.isFile()) {
+        return false;
+    }
+
+    const QString root = rootInfo.canonicalFilePath();
+    const QString file = fileInfo.canonicalFilePath();
+    return !root.isEmpty() && !file.isEmpty() && (file == root || file.startsWith(root + QLatin1Char('/')));
 }
 
 std::optional<QByteArray> Docset::readDocument(const QString &path) const

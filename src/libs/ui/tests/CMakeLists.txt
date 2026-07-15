@@ -69,6 +69,12 @@ target_link_libraries(docsetmetadata_test PRIVATE Registry Qt6::Gui Qt6::Test)
 zeal_add_test(docsetmetadata_test)
 set_tests_properties(docsetmetadata_test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
+add_executable(docsetpath_test docsetpath_test.cpp)
+target_link_libraries(docsetpath_test PRIVATE Registry Qt6::Gui Qt6::Test)
+
+zeal_add_test(docsetpath_test)
+set_tests_properties(docsetpath_test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
 add_executable(docsetcatalog_test docsetcatalog_test.cpp)
 target_link_libraries(docsetcatalog_test PRIVATE Ui Qt6::Gui Qt6::Network Qt6::Test)
 

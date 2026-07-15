@@ -234,6 +234,7 @@ void TarixArchiveTest::testExists()
     const TarixArchive archive(m_archivePath, m_indexPath);
     QVERIFY(archive.exists(QStringLiteral("Contents/Resources/Documents/page.html")));
     QVERIFY(!archive.exists(QStringLiteral("Contents/Resources/Documents/missing.html")));
+    QVERIFY(!archive.exists(QStringLiteral("Contents/Resources/Documents/../page.html")));
 }
 
 void TarixArchiveTest::testExistsCaseInsensitive()

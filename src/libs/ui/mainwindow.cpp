@@ -38,6 +38,7 @@
 #include <QDockWidget>
 #include <QFocusEvent>
 #include <QIcon>
+#include <QLoggingCategory>
 #include <QKeyEvent>
 #include <QMenuBar>
 #include <QMessageBox>
@@ -55,6 +56,8 @@
 namespace Zeal::WidgetUi {
 
 namespace {
+Q_LOGGING_CATEGORY(log, "zeal.ui.mainwindow")
+
 constexpr int DefaultSidebarWidth = 180;
 constexpr int DefaultLearningNotesWidth = 410;
 constexpr int MainWindowStateVersion = 1;
@@ -428,22 +431,44 @@ void MainWindow::restoreLastDocumentation()
     }
     m_lastDocumentationRestoreAttempted = true;
 
+    const auto clearStaleRestore = [this](const QString &reason) {
+        m_settings->lastDocumentationDocsetId.clear();
+        m_settings->lastDocumentationPagePath.clear();
+        m_settings->save();
+        qCWarning(log, "Ignoring stale restored documentation page: %s", qPrintable(reason));
+    };
+
     if (!m_settings->openLastDocumentationOnLaunch || m_settings->lastDocumentationDocsetId.isEmpty()) {
         return;
     }
 
     const QString pagePath = QDir::cleanPath(m_settings->lastDocumentationPagePath);
-    if (pagePath.isEmpty() || pagePath == QLatin1String(".") || pagePath.startsWith(QLatin1String("../"))) {
+    if (!Registry::Docset::isSafeDocumentPath(pagePath)) {
+        clearStaleRestore(QStringLiteral("unsafe page path '%1'").arg(m_settings->lastDocumentationPagePath));
         return;
     }
 
     const Registry::Docset *docset
         = m_application->docsetRegistry()->docset(m_settings->lastDocumentationDocsetId);
     if (docset == nullptr) {
+        clearStaleRestore(QStringLiteral("docset '%1' is no longer registered")
+                              .arg(m_settings->lastDocumentationDocsetId));
         return;
     }
 
-    const QUrl url = docset->baseUrl().resolved(QUrl(pagePath));
+    if (!docset->hasDocument(pagePath)) {
+        clearStaleRestore(QStringLiteral("document '%1' is missing from docset '%2'")
+                              .arg(pagePath, docset->name()));
+        return;
+    }
+
+    // The HTTP mount URL is a prefix without a trailing slash. Make it a
+    // directory URL before resolving the saved relative document path.
+    QUrl docsetUrl = docset->baseUrl();
+    if (!docsetUrl.path().endsWith(QLatin1Char('/'))) {
+        docsetUrl.setPath(docsetUrl.path() + QLatin1Char('/'));
+    }
+    const QUrl url = docsetUrl.resolved(QUrl(pagePath));
     if (BrowserTab *tab = currentTab()) {
         tab->webControl()->load(url);
         tab->webControl()->focus();

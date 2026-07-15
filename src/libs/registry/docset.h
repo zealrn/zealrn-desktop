@@ -49,6 +49,8 @@ public:
     QString documentPath() const;
 
     bool isArchived() const;
+    static bool isSafeDocumentPath(const QString &path);
+    bool hasDocument(const QString &path) const;
     std::optional<QByteArray> readDocument(const QString &path) const;
 
     QIcon icon() const;
