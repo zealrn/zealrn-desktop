@@ -107,7 +107,7 @@ HelpDialog::HelpDialog(Section section, const QString &terminalBackend, int sche
 
 QUrl HelpDialog::reportIssueUrl()
 {
-    return QUrl(QStringLiteral("https://github.com/abnzrdev/zealrn/issues/new"));
+    return QUrl(QStringLiteral("https://github.com/zealrn/zealrn-desktop/issues/new"));
 }
 
 QString HelpDialog::diagnosticReport(const QString &terminalBackend, int schemaVersion, int docsetCount)

@@ -6,7 +6,7 @@ Security fixes are provided for the latest published ZealRN release and the curr
 
 ## Reporting a vulnerability
 
-Do not open a public issue for an active vulnerability. Use [GitHub private vulnerability reporting](https://github.com/abnzrdev/zealrn/security/advisories/new) and include:
+Do not open a public issue for an active vulnerability. Use [GitHub private vulnerability reporting](https://github.com/zealrn/zealrn-desktop/security/advisories/new) and include:
 
 - the affected ZealRN version and operating system;
 - a concise description of the impact;

@@ -40,25 +40,25 @@ void ApplicationUpdatesTest::currentVersionIsProductionRelease()
 
 void ApplicationUpdatesTest::usesZealrnRepository()
 {
-    QCOMPARE(Application::repositorySlug(), QStringLiteral("abnzrdev/zealrn"));
+    QCOMPARE(Application::repositorySlug(), QStringLiteral("zealrn/zealrn-desktop"));
 }
 
 void ApplicationUpdatesTest::usesLatestStableReleaseEndpoint()
 {
     QCOMPARE(Application::releasesApiUrl(false).toString(),
-             QStringLiteral("https://api.github.com/repos/abnzrdev/zealrn/releases/latest"));
+             QStringLiteral("https://api.github.com/repos/zealrn/zealrn-desktop/releases/latest"));
 }
 
 void ApplicationUpdatesTest::usesReleaseListForPrereleases()
 {
     QCOMPARE(Application::releasesApiUrl(true).toString(),
-             QStringLiteral("https://api.github.com/repos/abnzrdev/zealrn/releases?per_page=20"));
+             QStringLiteral("https://api.github.com/repos/zealrn/zealrn-desktop/releases?per_page=20"));
 }
 
 void ApplicationUpdatesTest::usesZealrnReleasePage()
 {
     QCOMPARE(Application::releasesPageUrl().toString(),
-             QStringLiteral("https://github.com/abnzrdev/zealrn/releases"));
+             QStringLiteral("https://github.com/zealrn/zealrn-desktop/releases"));
 }
 
 void ApplicationUpdatesTest::emptyListMeansNoPublishedReleases()

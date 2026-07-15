@@ -19,7 +19,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 project(ZealRN
     VERSION 0.1.0 # x-version
     DESCRIPTION "An offline documentation learning tool."
-    HOMEPAGE_URL "https://github.com/abnzrdev/zealrn"
+    HOMEPAGE_URL "https://github.com/zealrn/zealrn-desktop"
     LANGUAGES CXX
 )
 
@@ -58,7 +58,7 @@ if(ZEAL_USE_COMPILER_CACHE)
 endif()
 
 # Project information.
-set(PROJECT_COMPANY_NAME "abnzrdev")
+set(PROJECT_COMPANY_NAME "zealrn")
 set(PROJECT_COPYRIGHT "© 2013-2026 Oleg Shparber and other contributors")
 
 # Determine version suffix for non-release builds.

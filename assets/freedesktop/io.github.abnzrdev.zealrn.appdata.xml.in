@@ -12,8 +12,8 @@
     <p>Documentation and notes remain local. Existing Zeal docsets can be reused without copying them.</p>
   </description>
   <categories><category>Development</category><category>Documentation</category></categories>
-  <url type="homepage">https://github.com/abnzrdev/zealrn</url>
-  <url type="vcs-browser">https://github.com/abnzrdev/zealrn</url>
+  <url type="homepage">https://zealrn.github.io/</url>
+  <url type="vcs-browser">https://github.com/zealrn/zealrn-desktop</url>
   <releases>
     <release date="2026-07-15" version="0.1.0" type="stable" />
   </releases>

@@ -36,9 +36,9 @@ void WebBridge::openShortUrl(const QString &key)
     }
 
     if (key == QLatin1String("github")) {
-        QDesktopServices::openUrl(QUrl(QStringLiteral("https://github.com/abnzrdev/zealrn")));
+        QDesktopServices::openUrl(QUrl(QStringLiteral("https://github.com/zealrn/zealrn-desktop")));
     } else if (key == QLatin1String("report-bug")) {
-        QDesktopServices::openUrl(QUrl(QStringLiteral("https://github.com/abnzrdev/zealrn/issues/new")));
+        QDesktopServices::openUrl(QUrl(QStringLiteral("https://github.com/zealrn/zealrn-desktop/issues/new")));
     } else {
         QDesktopServices::openUrl(QUrl(QStringLiteral("https://go.zealdocs.org/l/") + key));
     }

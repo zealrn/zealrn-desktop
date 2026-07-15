@@ -21,7 +21,7 @@ private slots:
 void HelpDialogTest::usesZealrnSupportIdentity()
 {
     QCOMPARE(HelpDialog::reportIssueUrl().toString(),
-             QStringLiteral("https://github.com/abnzrdev/zealrn/issues/new"));
+             QStringLiteral("https://github.com/zealrn/zealrn-desktop/issues/new"));
 }
 
 void HelpDialogTest::diagnosticsExcludeSensitiveData()

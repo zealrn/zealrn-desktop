@@ -162,7 +162,7 @@ QString Application::versionString()
 
 QString Application::repositorySlug()
 {
-    return QStringLiteral("abnzrdev/zealrn");
+    return QStringLiteral("zealrn/zealrn-desktop");
 }
 
 QUrl Application::releasesApiUrl(bool includePrereleases)

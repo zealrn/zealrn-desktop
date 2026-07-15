@@ -57,7 +57,7 @@ Section "ZealRN" MainSection
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ZealRN" "DisplayName" "ZealRN"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ZealRN" "DisplayVersion" "0.1.0"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ZealRN" "Publisher" "abnzrdev"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ZealRN" "URLInfoAbout" "https://github.com/abnzrdev/zealrn"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ZealRN" "URLInfoAbout" "https://github.com/zealrn/zealrn-desktop"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ZealRN" "DisplayIcon" "$INSTDIR\zealrn.exe"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ZealRN" "UninstallString" '$\"$INSTDIR\Uninstall.exe$\"'
   WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ZealRN" "NoModify" 1
