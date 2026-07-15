@@ -1,16 +1,16 @@
-# Contributing to Zeal
+# Contributing to ZealRN
 
 Thanks for your interest in improving Zeal. This document covers the practical side: how to build the project, which
 conventions to follow, and what to expect from review.
 
 ## Before you start
 
-Bug reports and small fixes can go straight to [GitHub issues](https://github.com/zealdocs/zeal/issues) or a pull
+Bug reports and small fixes can go straight to [GitHub issues](https://github.com/zealrn/zealrn-desktop/issues) or a pull
 request. For anything larger, such as a new feature or refactoring, please open an issue or a
 [discussion](https://github.com/zealdocs/zeal/discussions) first so we can agree on the approach before you spend
 time on the implementation.
 
-Questions are welcome in [GitHub discussions](https://github.com/zealdocs/zeal/discussions) or on
+Questions are welcome in [GitHub discussions](https://github.com/zealrn/zealrn-desktop/discussions) or on
 [Discord](https://go.zealdocs.org/l/discord). Project spaces follow a short
 [code of conduct](https://go.zealdocs.org/l/conduct).
 
@@ -82,5 +82,4 @@ By submitting a contribution, you agree to provide it under the project license.
 
 ## Security
 
-If you think you have found a security issue, please report it privately to <support@zealdocs.org> instead of
-opening a public issue.
+If you think you have found a security issue, please use the [private security advisory form](https://github.com/zealrn/zealrn-desktop/security/advisories/new) instead of opening a public issue.

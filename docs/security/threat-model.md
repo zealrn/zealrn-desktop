@@ -8,7 +8,7 @@ This model covers the desktop application, its Linux and Windows packages, and t
 - installed docsets and user-selected export locations;
 - application settings and local session state;
 - the user's filesystem and processes reachable through Developer Terminal;
-- package and update identity for `abnzrdev/zealrn`.
+- package and update identity for `zealrn/zealrn-desktop`.
 
 ZealRN is a local, single-user desktop application. It has no accounts, cloud sync, telemetry, remote terminal, or background installer.
 
@@ -33,7 +33,7 @@ The terminal WebEngine frontend is only a renderer. It loads local Qt resources,
 
 ## Update and package trust
 
-The application checks GitHub releases for `abnzrdev/zealrn` and never upstream Zeal. Checks send ordinary HTTP metadata such as IP address and user agent to GitHub, but no account identifier, note content, docset list, or telemetry identifier. A release response can only produce a notification and open a verified GitHub release page. ZealRN does not download, execute, or install an update automatically.
+The application checks GitHub releases for `zealrn/zealrn-desktop` and never upstream Zeal. Checks send ordinary HTTP metadata such as IP address and user agent to GitHub, but no account identifier, note content, docset list, or telemetry identifier. A release response can only produce a notification and open a verified GitHub release page. ZealRN does not download, execute, or install an update automatically.
 
 Release packages are currently unsigned. SHA256 checksums provide corruption detection but not publisher authentication when obtained from the same untrusted channel. Windows SmartScreen and Linux desktop environments may warn about unsigned packages.
 

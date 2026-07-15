@@ -34,7 +34,7 @@ Browser backup imports previously lacked explicit aggregate limits. Imports now 
 
 ### Release update boundary
 
-The updater now uses only `abnzrdev/zealrn`, validates semantic versions and GitHub release URLs, limits responses to 1 MiB, uses HTTPS with safe redirects and a dedicated TLS-enforcing network manager, and stores validated ETags. It never downloads or executes an asset. A packaging default that disabled update notifications in release builds was corrected and covered by a default-on test.
+The updater now uses only `zealrn/zealrn-desktop`, validates semantic versions and GitHub release URLs, limits responses to 1 MiB, uses HTTPS with safe redirects and a dedicated TLS-enforcing network manager, and stores validated ETags. It never downloads or executes an asset. A packaging default that disabled update notifications in release builds was corrected and covered by a default-on test.
 
 ### Repository security automation
 
