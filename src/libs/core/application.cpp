@@ -324,7 +324,7 @@ std::optional<Application::ReleaseInfo> Application::publishedRelease(const QByt
 
 QUrl Application::releasesPageUrl()
 {
-    return QUrl(QStringLiteral("https://github.com/abnzrdev/zealrn/releases"));
+    return QUrl(QStringLiteral("https://github.com/%1/releases").arg(repositorySlug()));
 }
 
 std::optional<QVersionNumber> Application::latestPublishedRelease(const QByteArray &json, QString *error)

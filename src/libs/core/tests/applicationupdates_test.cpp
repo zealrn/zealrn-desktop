@@ -73,10 +73,10 @@ void ApplicationUpdatesTest::emptyListMeansNoPublishedReleases()
 void ApplicationUpdatesTest::ignoresDraftsAndPrereleases()
 {
     const QByteArray json = QByteArrayLiteral(R"([
-        {"tag_name":"v9.0.0","draft":true,"prerelease":false,"published_at":"2026-01-01T00:00:00Z","html_url":"https://github.com/abnzrdev/zealrn/releases/tag/v9.0.0"},
-        {"tag_name":"v8.0.0-beta.1","draft":false,"prerelease":true,"published_at":"2026-01-01T00:00:00Z","html_url":"https://github.com/abnzrdev/zealrn/releases/tag/v8.0.0-beta.1"},
-        {"tag_name":"v0.2.0","name":"ZealRN 0.2.0","draft":false,"prerelease":false,"published_at":"2026-01-01T00:00:00Z","html_url":"https://github.com/abnzrdev/zealrn/releases/tag/v0.2.0"},
-        {"tag_name":"v0.1.5","draft":false,"prerelease":false,"published_at":"2025-01-01T00:00:00Z","html_url":"https://github.com/abnzrdev/zealrn/releases/tag/v0.1.5"}
+        {"tag_name":"v9.0.0","draft":true,"prerelease":false,"published_at":"2026-01-01T00:00:00Z","html_url":"https://github.com/zealrn/zealrn-desktop/releases/tag/v9.0.0"},
+        {"tag_name":"v8.0.0-beta.1","draft":false,"prerelease":true,"published_at":"2026-01-01T00:00:00Z","html_url":"https://github.com/zealrn/zealrn-desktop/releases/tag/v8.0.0-beta.1"},
+        {"tag_name":"v0.2.0","name":"ZealRN 0.2.0","draft":false,"prerelease":false,"published_at":"2026-01-01T00:00:00Z","html_url":"https://github.com/zealrn/zealrn-desktop/releases/tag/v0.2.0"},
+        {"tag_name":"v0.1.5","draft":false,"prerelease":false,"published_at":"2025-01-01T00:00:00Z","html_url":"https://github.com/zealrn/zealrn-desktop/releases/tag/v0.1.5"}
     ])");
     QString error;
     const auto version = Application::latestPublishedRelease(json, &error);
@@ -93,7 +93,7 @@ void ApplicationUpdatesTest::parsesPublishedReleaseMetadata()
         "draft":false,
         "prerelease":false,
         "published_at":"2026-07-15T10:30:00Z",
-        "html_url":"https://github.com/abnzrdev/zealrn/releases/tag/v0.2.0"
+        "html_url":"https://github.com/zealrn/zealrn-desktop/releases/tag/v0.2.0"
     })");
     QString error;
     const auto release = Application::publishedRelease(json, false, &error);
@@ -103,15 +103,15 @@ void ApplicationUpdatesTest::parsesPublishedReleaseMetadata()
     QCOMPARE(release->title, QStringLiteral("Security update"));
     QCOMPARE(release->publishedAt, QDateTime::fromString(QStringLiteral("2026-07-15T10:30:00Z"), Qt::ISODate));
     QCOMPARE(release->pageUrl,
-             QUrl(QStringLiteral("https://github.com/abnzrdev/zealrn/releases/tag/v0.2.0")));
+             QUrl(QStringLiteral("https://github.com/zealrn/zealrn-desktop/releases/tag/v0.2.0")));
     QVERIFY(!release->prerelease);
 }
 
 void ApplicationUpdatesTest::includesPrereleasesWhenRequested()
 {
     const QByteArray json = QByteArrayLiteral(R"([
-        {"tag_name":"v0.2.0-beta.2","name":"Beta 2","draft":false,"prerelease":true,"published_at":"2026-07-15T10:30:00Z","html_url":"https://github.com/abnzrdev/zealrn/releases/tag/v0.2.0-beta.2"},
-        {"tag_name":"v0.2.0-beta.1","name":"Beta 1","draft":false,"prerelease":true,"published_at":"2026-07-14T10:30:00Z","html_url":"https://github.com/abnzrdev/zealrn/releases/tag/v0.2.0-beta.1"}
+        {"tag_name":"v0.2.0-beta.2","name":"Beta 2","draft":false,"prerelease":true,"published_at":"2026-07-15T10:30:00Z","html_url":"https://github.com/zealrn/zealrn-desktop/releases/tag/v0.2.0-beta.2"},
+        {"tag_name":"v0.2.0-beta.1","name":"Beta 1","draft":false,"prerelease":true,"published_at":"2026-07-14T10:30:00Z","html_url":"https://github.com/zealrn/zealrn-desktop/releases/tag/v0.2.0-beta.1"}
     ])");
     QString error;
     const auto release = Application::publishedRelease(json, true, &error);
