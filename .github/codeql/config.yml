@@ -13,3 +13,9 @@ packs:
 query-filters:
   - exclude:
       id: cpp/use-after-expired-lifetime
+
+paths-ignore:
+  - src/contrib/**
+  - src/app/resources/playground/*.bundle.js
+  - src/app/resources/terminal/*.bundle.js
+  - build/**

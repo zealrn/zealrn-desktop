@@ -3,7 +3,32 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     commit-message:
       prefix: ci(github)
     labels: []
+    groups:
+      github-actions:
+        patterns: ["*"]
+
+  - package-ecosystem: "npm"
+    directory: "/tools/playground"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: deps(playground)
+    labels: []
+    groups:
+      playground:
+        patterns: ["*"]
+
+  - package-ecosystem: "npm"
+    directory: "/tools/terminal-frontend"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: deps(terminal)
+    labels: []
+    groups:
+      terminal-frontend:
+        patterns: ["*"]

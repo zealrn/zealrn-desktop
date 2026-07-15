@@ -2,12 +2,13 @@ name: CodeQL Scan
 
 on:
   push:
-    branches: [main]
+    branches: [main, "feature/**"]
   pull_request:
     # The branches below must be a subset of the branches above.
     branches: [main]
   schedule:
   - cron: '0 8 * * 6'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -33,7 +34,7 @@ jobs:
       with:
         languages: c-cpp
         build-mode: manual
-        queries: security-and-quality,./.github/codeql/queries
+        queries: security-extended,security-and-quality,./.github/codeql/queries
         config-file: .github/codeql/config.yml
         trap-caching: true
         dependency-caching: true
@@ -80,3 +81,30 @@ jobs:
       with:
         sarif_file: ${{ runner.temp }}/codeql-sarif/cpp.sarif
         category: .github/workflows/analyze-codeql.yaml:analyze-codeql
+
+  analyze-scripts:
+    name: Analyze ${{ matrix.language }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript, actions]
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v7
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v4
+      with:
+        languages: ${{ matrix.language }}
+        build-mode: none
+        queries: security-extended,security-and-quality
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v4
+      with:
+        category: .github/workflows/analyze-codeql.yaml:${{ matrix.language }}
