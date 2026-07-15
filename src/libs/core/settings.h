@@ -5,6 +5,7 @@
 #define ZEAL_CORE_SETTINGS_H
 
 #include <QDataStream>
+#include <QDateTime>
 #include <QKeySequence>
 #include <QObject>
 #include <QStringList>
@@ -27,6 +28,24 @@ public:
     // Startup
     bool startMinimized;
     bool checkForUpdate;
+
+    enum class UpdateFrequency : unsigned int {
+        Daily = 0,
+        Weekly,
+        Never
+    };
+    Q_ENUM(UpdateFrequency)
+    UpdateFrequency updateFrequency = UpdateFrequency::Daily;
+    bool updateIncludePrereleases = false;
+    QDateTime updateLastAttempt;
+    QDateTime updateLastSuccess;
+    QByteArray updateEtag;
+    QString updateSkippedVersion;
+    QString updateCachedVersion;
+    QString updateCachedTitle;
+    QDateTime updateCachedPublishedAt;
+    QString updateCachedPageUrl;
+    bool updateCachedPrerelease = false;
     bool hideMenuBar;
     bool hideSidebar;
     bool terminalSafetyAcknowledged;
@@ -131,6 +150,7 @@ public:
     // Helper functions.
     bool isDarkModeEnabled() const;
     bool isDocumentationThemeRestartRequired() const;
+    bool isAutomaticUpdateCheckDue(const QDateTime &now = QDateTime::currentDateTimeUtc()) const;
     bool isTrayActive() const;
     void resetGettingStartedChecklist();
     void resetHelpTips();
@@ -175,5 +195,6 @@ QDataStream &operator>>(QDataStream &in, Zeal::Core::Settings::ExternalLinkPolic
 
 Q_DECLARE_METATYPE(Zeal::Core::Settings::ContentAppearance)
 Q_DECLARE_METATYPE(Zeal::Core::Settings::ExternalLinkPolicy)
+Q_DECLARE_METATYPE(Zeal::Core::Settings::UpdateFrequency)
 
 #endif // ZEAL_CORE_SETTINGS_H

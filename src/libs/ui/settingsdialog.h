@@ -8,6 +8,9 @@
 #include <QDialog>
 
 class QCheckBox;
+class QComboBox;
+class QLabel;
+class QPushButton;
 
 namespace Zeal::WidgetUi {
 
@@ -35,6 +38,11 @@ private:
     QCheckBox *m_openStartNoteCheckBox = nullptr;
     QCheckBox *m_openLastDocumentationCheckBox = nullptr;
     QCheckBox *m_terminalStartOnOpenCheckBox = nullptr;
+    QComboBox *m_updateFrequencyComboBox = nullptr;
+    QCheckBox *m_updatePrereleasesCheckBox = nullptr;
+    QLabel *m_updateLastCheckLabel = nullptr;
+    QLabel *m_updateChannelLabel = nullptr;
+    QPushButton *m_checkNowButton = nullptr;
 
     friend class Ui::SettingsDialog;
 };

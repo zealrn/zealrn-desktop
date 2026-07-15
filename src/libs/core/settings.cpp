@@ -40,6 +40,7 @@ constexpr auto GroupTabs = "tabs"_L1;
 constexpr auto GroupInternal = "internal"_L1;
 constexpr auto GroupProxy = "proxy"_L1;
 constexpr auto GroupGettingStarted = "getting_started"_L1;
+constexpr auto GroupUpdates = "updates"_L1;
 
 bool boolValue(const QSettings &settings, const QString &key, bool defaultValue)
 {
@@ -108,6 +109,19 @@ bool Settings::isDocumentationThemeRestartRequired() const
 #endif
 }
 
+bool Settings::isAutomaticUpdateCheckDue(const QDateTime &now) const
+{
+    if (!checkForUpdate || updateFrequency == UpdateFrequency::Never) {
+        return false;
+    }
+    if (!updateLastAttempt.isValid() || updateLastAttempt > now) {
+        return true;
+    }
+
+    const qint64 interval = updateFrequency == UpdateFrequency::Weekly ? 7 * 24 * 60 * 60 : 24 * 60 * 60;
+    return updateLastAttempt.secsTo(now) >= interval;
+}
+
 bool Settings::isTrayActive() const
 {
     return showSystrayIcon && QSystemTrayIcon::isSystemTrayAvailable();
@@ -166,6 +180,32 @@ void Settings::load()
 #else
     checkForUpdate = settings->value(QStringLiteral("check_for_update"), false).toBool();
 #endif
+
+    settings->beginGroup(GroupUpdates);
+    const int updateFrequencyValue = settings->value(QStringLiteral("frequency"),
+                                                      static_cast<int>(UpdateFrequency::Daily))
+                                         .toInt();
+    switch (static_cast<UpdateFrequency>(updateFrequencyValue)) {
+    case UpdateFrequency::Daily:
+    case UpdateFrequency::Weekly:
+    case UpdateFrequency::Never:
+        updateFrequency = static_cast<UpdateFrequency>(updateFrequencyValue);
+        break;
+    default:
+        updateFrequency = UpdateFrequency::Daily;
+        break;
+    }
+    updateIncludePrereleases = boolValue(*settings, QStringLiteral("include_prereleases"), false);
+    updateLastAttempt = settings->value(QStringLiteral("last_attempt")).toDateTime();
+    updateLastSuccess = settings->value(QStringLiteral("last_success")).toDateTime();
+    updateEtag = settings->value(QStringLiteral("etag")).toByteArray();
+    updateSkippedVersion = settings->value(QStringLiteral("skipped_version")).toString();
+    updateCachedVersion = settings->value(QStringLiteral("cached_version")).toString();
+    updateCachedTitle = settings->value(QStringLiteral("cached_title")).toString();
+    updateCachedPublishedAt = settings->value(QStringLiteral("cached_published_at")).toDateTime();
+    updateCachedPageUrl = settings->value(QStringLiteral("cached_page_url")).toString();
+    updateCachedPrerelease = boolValue(*settings, QStringLiteral("cached_prerelease"), false);
+    settings->endGroup();
 
     showSystrayIcon = settings->value(QStringLiteral("show_systray_icon"), true).toBool();
     minimizeToSystray = settings->value(QStringLiteral("minimize_to_systray"), false).toBool();
@@ -355,6 +395,20 @@ void Settings::save()
     // TODO: Put everything in groups
     settings->setValue(QStringLiteral("start_minimized"), startMinimized);
     settings->setValue(QStringLiteral("check_for_update"), checkForUpdate);
+
+    settings->beginGroup(GroupUpdates);
+    settings->setValue(QStringLiteral("frequency"), static_cast<int>(updateFrequency));
+    settings->setValue(QStringLiteral("include_prereleases"), updateIncludePrereleases);
+    settings->setValue(QStringLiteral("last_attempt"), updateLastAttempt);
+    settings->setValue(QStringLiteral("last_success"), updateLastSuccess);
+    settings->setValue(QStringLiteral("etag"), updateEtag);
+    settings->setValue(QStringLiteral("skipped_version"), updateSkippedVersion);
+    settings->setValue(QStringLiteral("cached_version"), updateCachedVersion);
+    settings->setValue(QStringLiteral("cached_title"), updateCachedTitle);
+    settings->setValue(QStringLiteral("cached_published_at"), updateCachedPublishedAt);
+    settings->setValue(QStringLiteral("cached_page_url"), updateCachedPageUrl);
+    settings->setValue(QStringLiteral("cached_prerelease"), updateCachedPrerelease);
+    settings->endGroup();
 
     settings->setValue(QStringLiteral("show_systray_icon"), showSystrayIcon);
     settings->setValue(QStringLiteral("minimize_to_systray"), minimizeToSystray);

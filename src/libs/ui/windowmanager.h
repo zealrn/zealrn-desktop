@@ -48,6 +48,7 @@ private:
 
     QList<MainWindow *> m_windows;
     QSystemTrayIcon *m_trayIcon = nullptr;
+    QString m_notifiedUpdateVersion;
 };
 
 } // namespace WidgetUi

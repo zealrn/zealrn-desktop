@@ -12,9 +12,12 @@
 
 #include <QDir>
 #include <QCheckBox>
+#include <QComboBox>
 #include <QFileDialog>
 #include <QGroupBox>
 #include <QHBoxLayout>
+#include <QLabel>
+#include <QLocale>
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QWebEngineProfile>
@@ -39,6 +42,32 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 {
     ui->setupUi(this);
 
+    auto *updatesGroup = new QGroupBox(tr("Updates"), ui->generalTab);
+    auto *updatesLayout = new QVBoxLayout(updatesGroup);
+    ui->checkForUpdateCheckBox->setText(tr("Check for updates automatically"));
+    updatesLayout->addWidget(ui->checkForUpdateCheckBox);
+    auto *frequencyLayout = new QHBoxLayout;
+    frequencyLayout->addWidget(new QLabel(tr("Frequency:"), updatesGroup));
+    m_updateFrequencyComboBox = new QComboBox(updatesGroup);
+    m_updateFrequencyComboBox->addItem(tr("Daily"), static_cast<int>(Core::Settings::UpdateFrequency::Daily));
+    m_updateFrequencyComboBox->addItem(tr("Weekly"), static_cast<int>(Core::Settings::UpdateFrequency::Weekly));
+    m_updateFrequencyComboBox->addItem(tr("Never"), static_cast<int>(Core::Settings::UpdateFrequency::Never));
+    frequencyLayout->addWidget(m_updateFrequencyComboBox);
+    frequencyLayout->addStretch();
+    updatesLayout->addLayout(frequencyLayout);
+    m_updatePrereleasesCheckBox = new QCheckBox(tr("Include prereleases"), updatesGroup);
+    updatesLayout->addWidget(m_updatePrereleasesCheckBox);
+    m_updateChannelLabel = new QLabel(updatesGroup);
+    m_updateLastCheckLabel = new QLabel(updatesGroup);
+    updatesLayout->addWidget(m_updateChannelLabel);
+    updatesLayout->addWidget(m_updateLastCheckLabel);
+    m_checkNowButton = new QPushButton(tr("Check Now"), updatesGroup);
+    auto *checkLayout = new QHBoxLayout;
+    checkLayout->addWidget(m_checkNowButton);
+    checkLayout->addStretch();
+    updatesLayout->addLayout(checkLayout);
+    ui->verticalLayout_7->insertWidget(1, updatesGroup);
+
     auto *gettingStartedGroup = new QGroupBox(tr("Getting Started"), ui->generalTab);
     auto *gettingStartedLayout = new QVBoxLayout(gettingStartedGroup);
     m_quickTourNextLaunchCheckBox = new QCheckBox(tr("Show Quick Tour on next launch"), gettingStartedGroup);
@@ -60,7 +89,27 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     resetLayout->addWidget(resetTipsButton);
     resetLayout->addStretch();
     gettingStartedLayout->addLayout(resetLayout);
-    ui->verticalLayout_7->insertWidget(1, gettingStartedGroup);
+    ui->verticalLayout_7->insertWidget(2, gettingStartedGroup);
+
+    const auto finishUpdateCheck = [this]() {
+        m_checkNowButton->setEnabled(true);
+        const QDateTime lastSuccess = Core::Application::instance()->settings()->updateLastSuccess;
+        m_updateLastCheckLabel->setText(lastSuccess.isValid()
+                                            ? tr("Last successful check: %1").arg(QLocale().toString(lastSuccess.toLocalTime(),
+                                                                                                    QLocale::ShortFormat))
+                                            : tr("Last successful check: Never"));
+    };
+    connect(m_checkNowButton, &QPushButton::clicked, this, [this]() {
+        saveSettings();
+        m_checkNowButton->setEnabled(false);
+        if (!Core::Application::instance()->checkForUpdates(false)) {
+            m_checkNowButton->setEnabled(true);
+        }
+    });
+    connect(Core::Application::instance(), &Core::Application::updateCheckDone, this, finishUpdateCheck);
+    connect(Core::Application::instance(), &Core::Application::updateCheckNoReleases, this, finishUpdateCheck);
+    connect(Core::Application::instance(), &Core::Application::updateCheckError, this, finishUpdateCheck);
+    connect(Core::Application::instance(), &Core::Application::updateAvailable, this, finishUpdateCheck);
 
     connect(resetChecklistButton, &QPushButton::clicked, this, []() {
         Core::Application::instance()->settings()->resetGettingStartedChecklist();
@@ -194,6 +243,16 @@ void SettingsDialog::loadSettings()
     // General Tab
     ui->startMinimizedCheckBox->setChecked(settings->startMinimized);
     ui->checkForUpdateCheckBox->setChecked(settings->checkForUpdate);
+    const int frequencyIndex = m_updateFrequencyComboBox->findData(static_cast<int>(settings->updateFrequency));
+    m_updateFrequencyComboBox->setCurrentIndex(frequencyIndex >= 0 ? frequencyIndex : 0);
+    m_updatePrereleasesCheckBox->setChecked(settings->updateIncludePrereleases);
+    m_updateChannelLabel->setText(settings->updateIncludePrereleases ? tr("Current update channel: Prereleases")
+                                                                     : tr("Current update channel: Stable"));
+    m_updateLastCheckLabel->setText(settings->updateLastSuccess.isValid()
+                                        ? tr("Last successful check: %1")
+                                              .arg(QLocale().toString(settings->updateLastSuccess.toLocalTime(),
+                                                                      QLocale::ShortFormat))
+                                        : tr("Last successful check: Never"));
 
     ui->systrayGroupBox->setChecked(settings->showSystrayIcon);
     ui->minimizeToSystrayCheckBox->setChecked(settings->minimizeToSystray);
@@ -295,6 +354,9 @@ void SettingsDialog::saveSettings()
     // General Tab
     settings->startMinimized = ui->startMinimizedCheckBox->isChecked();
     settings->checkForUpdate = ui->checkForUpdateCheckBox->isChecked();
+    settings->updateFrequency = static_cast<Core::Settings::UpdateFrequency>(
+        m_updateFrequencyComboBox->currentData().toInt());
+    settings->updateIncludePrereleases = m_updatePrereleasesCheckBox->isChecked();
 
     settings->showSystrayIcon = ui->systrayGroupBox->isChecked();
     settings->minimizeToSystray = ui->minimizeToSystrayCheckBox->isChecked();

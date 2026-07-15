@@ -10,6 +10,7 @@
 #include <QtTest>
 
 using Appearance = Zeal::Core::Settings::ContentAppearance;
+using UpdateFrequency = Zeal::Core::Settings::UpdateFrequency;
 using Zeal::Core::Settings;
 
 class SettingsTest : public QObject
@@ -31,6 +32,10 @@ private slots:
     void invalidNoteZoomIsClamped();
     void gettingStartedSettingsRestoreAfterReopen();
     void invalidGettingStartedValuesUseSafeDefaults();
+    void updateSettingsRestoreAfterReopen();
+    void invalidUpdateFrequencyFallsBackToDaily();
+    void automaticUpdateDue_data();
+    void automaticUpdateDue();
     void sharedDocsetSettingRestoresAfterReopen();
     void existingZealDocsetPathsFindsNativeAndFlatpakLibraries();
 };
@@ -254,6 +259,90 @@ void SettingsTest::invalidGettingStartedValuesUseSafeDefaults()
     Settings restored;
     QVERIFY(restored.openStartNoteOnLaunch);
     QCOMPARE(restored.gettingStartedChecklist, quint32(0));
+}
+
+void SettingsTest::updateSettingsRestoreAfterReopen()
+{
+    QTemporaryDir dir;
+    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, dir.path());
+    const QDateTime attempted(QDate(2026, 7, 14), QTime(10, 0), QTimeZone::utc());
+    const QDateTime successful(QDate(2026, 7, 14), QTime(10, 1), QTimeZone::utc());
+    {
+        Settings settings;
+        settings.checkForUpdate = true;
+        settings.updateFrequency = UpdateFrequency::Weekly;
+        settings.updateIncludePrereleases = true;
+        settings.updateLastAttempt = attempted;
+        settings.updateLastSuccess = successful;
+        settings.updateEtag = QByteArrayLiteral("\"release-etag\"");
+        settings.updateSkippedVersion = QStringLiteral("0.2.0");
+        settings.updateCachedVersion = QStringLiteral("0.2.1");
+        settings.updateCachedTitle = QStringLiteral("ZealRN 0.2.1");
+        settings.updateCachedPublishedAt = successful;
+        settings.updateCachedPageUrl = QStringLiteral("https://github.com/abnzrdev/zealrn/releases/tag/v0.2.1");
+        settings.updateCachedPrerelease = true;
+        settings.save();
+    }
+
+    Settings restored;
+    QVERIFY(restored.checkForUpdate);
+    QCOMPARE(restored.updateFrequency, UpdateFrequency::Weekly);
+    QVERIFY(restored.updateIncludePrereleases);
+    QCOMPARE(restored.updateLastAttempt, attempted);
+    QCOMPARE(restored.updateLastSuccess, successful);
+    QCOMPARE(restored.updateEtag, QByteArrayLiteral("\"release-etag\""));
+    QCOMPARE(restored.updateSkippedVersion, QStringLiteral("0.2.0"));
+    QCOMPARE(restored.updateCachedVersion, QStringLiteral("0.2.1"));
+    QCOMPARE(restored.updateCachedTitle, QStringLiteral("ZealRN 0.2.1"));
+    QCOMPARE(restored.updateCachedPublishedAt, successful);
+    QCOMPARE(restored.updateCachedPageUrl,
+             QStringLiteral("https://github.com/abnzrdev/zealrn/releases/tag/v0.2.1"));
+    QVERIFY(restored.updateCachedPrerelease);
+}
+
+void SettingsTest::invalidUpdateFrequencyFallsBackToDaily()
+{
+    QTemporaryDir dir;
+    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, dir.path());
+    QSettings raw;
+    raw.setValue(QStringLiteral("updates/frequency"), 99);
+    raw.sync();
+
+    Settings settings;
+    QCOMPARE(settings.updateFrequency, UpdateFrequency::Daily);
+}
+
+void SettingsTest::automaticUpdateDue_data()
+{
+    QTest::addColumn<bool>("enabled");
+    QTest::addColumn<UpdateFrequency>("frequency");
+    QTest::addColumn<QDateTime>("lastAttempt");
+    QTest::addColumn<bool>("due");
+
+    const QDateTime now(QDate(2026, 7, 15), QTime(12, 0), QTimeZone::utc());
+    QTest::newRow("disabled") << false << UpdateFrequency::Daily << QDateTime() << false;
+    QTest::newRow("never") << true << UpdateFrequency::Never << QDateTime() << false;
+    QTest::newRow("first check") << true << UpdateFrequency::Daily << QDateTime() << true;
+    QTest::newRow("daily too soon") << true << UpdateFrequency::Daily << now.addSecs(-23 * 3600) << false;
+    QTest::newRow("daily due") << true << UpdateFrequency::Daily << now.addSecs(-24 * 3600) << true;
+    QTest::newRow("weekly too soon") << true << UpdateFrequency::Weekly << now.addDays(-6) << false;
+    QTest::newRow("weekly due") << true << UpdateFrequency::Weekly << now.addDays(-7) << true;
+    QTest::newRow("future clock") << true << UpdateFrequency::Daily << now.addDays(1) << true;
+}
+
+void SettingsTest::automaticUpdateDue()
+{
+    QFETCH(bool, enabled);
+    QFETCH(UpdateFrequency, frequency);
+    QFETCH(QDateTime, lastAttempt);
+    QFETCH(bool, due);
+
+    Settings settings;
+    settings.checkForUpdate = enabled;
+    settings.updateFrequency = frequency;
+    settings.updateLastAttempt = lastAttempt;
+    const QDateTime now(QDate(2026, 7, 15), QTime(12, 0), QTimeZone::utc());
+    QCOMPARE(settings.isAutomaticUpdateCheckDue(now), due);
 }
 
 void SettingsTest::sharedDocsetSettingRestoresAfterReopen()

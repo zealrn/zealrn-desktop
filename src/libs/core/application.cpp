@@ -18,11 +18,15 @@
 #include <QJsonObject>
 #include <QMetaObject>
 #include <QNetworkProxy>
+#include <QNetworkRequest>
 #include <QNetworkReply>
+#include <QRegularExpression>
 #include <QScopedPointer>
 #include <QStandardPaths>
 #include <QSysInfo>
 #include <QThread>
+
+#include <memory>
 
 namespace Zeal::Core {
 
@@ -40,6 +44,7 @@ Application::Application(quint16 httpServerPort, QObject *parent)
     m_session->load();
 
     m_networkManager = new NetworkAccessManager(this);
+    m_updateNetworkManager = new QNetworkAccessManager(this);
 
     m_fileManager = new FileManager(this);
     m_httpServer = new HttpServer(httpServerPort, this);
@@ -155,9 +160,166 @@ QString Application::versionString()
     return v;
 }
 
-QUrl Application::releasesApiUrl()
+QString Application::repositorySlug()
 {
-    return QUrl(QStringLiteral("https://api.github.com/repos/abnzrdev/zealrn/releases"));
+    return QStringLiteral("abnzrdev/zealrn");
+}
+
+QUrl Application::releasesApiUrl(bool includePrereleases)
+{
+    const QString path = includePrereleases ? QStringLiteral("/releases?per_page=20")
+                                            : QStringLiteral("/releases/latest");
+    return QUrl(QStringLiteral("https://api.github.com/repos/%1%2").arg(repositorySlug(), path));
+}
+
+namespace {
+struct SemanticVersion {
+    QList<quint64> core;
+    QStringList prerelease;
+};
+
+std::optional<SemanticVersion> parseSemanticVersion(QString text)
+{
+    if (text.startsWith(QLatin1Char('v'), Qt::CaseInsensitive)) {
+        text.remove(0, 1);
+    }
+    static const QRegularExpression pattern(
+        QStringLiteral(R"(^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$)"));
+    const QRegularExpressionMatch match = pattern.match(text);
+    if (!match.hasMatch()) {
+        return std::nullopt;
+    }
+
+    SemanticVersion result;
+    for (int index = 1; index <= 3; ++index) {
+        bool ok = false;
+        const quint64 value = match.captured(index).toULongLong(&ok);
+        if (!ok) {
+            return std::nullopt;
+        }
+        result.core.append(value);
+    }
+    if (!match.captured(4).isEmpty()) {
+        result.prerelease = match.captured(4).split(QLatin1Char('.'));
+    }
+    return result;
+}
+
+bool isTrustedReleaseUrl(const QUrl &url)
+{
+    return url.scheme() == QLatin1String("https") && url.host() == QLatin1String("github.com")
+           && url.path().startsWith(QStringLiteral("/%1/releases/").arg(Application::repositorySlug()));
+}
+} // namespace
+
+int Application::compareSemanticVersions(const QString &candidate, const QString &installed)
+{
+    const auto left = parseSemanticVersion(candidate);
+    const auto right = parseSemanticVersion(installed);
+    if (!left || !right) {
+        return 0;
+    }
+    for (int index = 0; index < 3; ++index) {
+        if (left->core.at(index) != right->core.at(index)) {
+            return left->core.at(index) > right->core.at(index) ? 1 : -1;
+        }
+    }
+    if (left->prerelease.isEmpty() || right->prerelease.isEmpty()) {
+        if (left->prerelease.isEmpty() == right->prerelease.isEmpty()) {
+            return 0;
+        }
+        return left->prerelease.isEmpty() ? 1 : -1;
+    }
+    const int count = qMin(left->prerelease.size(), right->prerelease.size());
+    for (int index = 0; index < count; ++index) {
+        const QString &leftPart = left->prerelease.at(index);
+        const QString &rightPart = right->prerelease.at(index);
+        bool leftNumeric = false;
+        bool rightNumeric = false;
+        const quint64 leftNumber = leftPart.toULongLong(&leftNumeric);
+        const quint64 rightNumber = rightPart.toULongLong(&rightNumeric);
+        if (leftNumeric && rightNumeric && leftNumber != rightNumber) {
+            return leftNumber > rightNumber ? 1 : -1;
+        }
+        if (leftNumeric != rightNumeric) {
+            return leftNumeric ? -1 : 1;
+        }
+        const int comparison = QString::compare(leftPart, rightPart, Qt::CaseSensitive);
+        if (comparison != 0) {
+            return comparison > 0 ? 1 : -1;
+        }
+    }
+    return left->prerelease.size() == right->prerelease.size()
+               ? 0
+               : (left->prerelease.size() > right->prerelease.size() ? 1 : -1);
+}
+
+std::optional<Application::ReleaseInfo> Application::publishedRelease(const QByteArray &json,
+                                                                      bool includePrereleases,
+                                                                      QString *error)
+{
+    if (error != nullptr) {
+        error->clear();
+    }
+    QJsonParseError jsonError;
+    const QJsonDocument document = QJsonDocument::fromJson(json, &jsonError);
+    if (jsonError.error != QJsonParseError::NoError || (!document.isObject() && !document.isArray())) {
+        if (error != nullptr) {
+            *error = jsonError.error != QJsonParseError::NoError ? jsonError.errorString()
+                                                                  : tr("Server returned invalid release data.");
+        }
+        return std::nullopt;
+    }
+
+    const QJsonArray releases = document.isObject() ? QJsonArray{document.object()} : document.array();
+    std::optional<ReleaseInfo> latest;
+    for (const QJsonValue &value : releases) {
+        if (!value.isObject()) {
+            if (error != nullptr) {
+                *error = tr("Server returned invalid release data.");
+            }
+            return std::nullopt;
+        }
+        const QJsonObject object = value.toObject();
+        if (!object.value(QStringLiteral("draft")).isBool()
+            || !object.value(QStringLiteral("prerelease")).isBool()) {
+            if (error != nullptr) {
+                *error = tr("Server returned invalid release data.");
+            }
+            return std::nullopt;
+        }
+        const bool prerelease = object.value(QStringLiteral("prerelease")).toBool();
+        if (object.value(QStringLiteral("draft")).toBool() || (prerelease && !includePrereleases)) {
+            continue;
+        }
+
+        QString version = object.value(QStringLiteral("tag_name")).toString();
+        if (version.startsWith(QLatin1Char('v'), Qt::CaseInsensitive)) {
+            version.remove(0, 1);
+        }
+        const QUrl pageUrl(object.value(QStringLiteral("html_url")).toString());
+        const QDateTime publishedAt = QDateTime::fromString(object.value(QStringLiteral("published_at")).toString(),
+                                                            Qt::ISODate);
+        if (!parseSemanticVersion(version) || !publishedAt.isValid() || !isTrustedReleaseUrl(pageUrl)) {
+            if (error != nullptr) {
+                *error = tr("Server returned invalid release data.");
+            }
+            return std::nullopt;
+        }
+
+        ReleaseInfo info{version,
+                         object.value(QStringLiteral("name")).toString().trimmed(),
+                         publishedAt,
+                         pageUrl,
+                         prerelease};
+        if (info.title.isEmpty()) {
+            info.title = QStringLiteral("ZealRN %1").arg(info.version);
+        }
+        if (!latest || compareSemanticVersions(info.version, latest->version) > 0) {
+            latest = info;
+        }
+    }
+    return latest;
 }
 
 QUrl Application::releasesPageUrl()
@@ -167,53 +329,8 @@ QUrl Application::releasesPageUrl()
 
 std::optional<QVersionNumber> Application::latestPublishedRelease(const QByteArray &json, QString *error)
 {
-    if (error != nullptr) {
-        error->clear();
-    }
-
-    QJsonParseError jsonError;
-    const QJsonDocument document = QJsonDocument::fromJson(json, &jsonError);
-    if (jsonError.error != QJsonParseError::NoError || !document.isArray()) {
-        if (error != nullptr) {
-            *error = jsonError.error != QJsonParseError::NoError ? jsonError.errorString()
-                                                                  : tr("Server returned an invalid release list.");
-        }
-        return std::nullopt;
-    }
-
-    QVersionNumber latest;
-    for (const QJsonValue &value : document.array()) {
-        if (!value.isObject()) {
-            if (error != nullptr) {
-                *error = tr("Server returned an invalid release list.");
-            }
-            return std::nullopt;
-        }
-
-        const QJsonObject release = value.toObject();
-        if (release.value(QStringLiteral("draft")).toBool()
-            || release.value(QStringLiteral("prerelease")).toBool()) {
-            continue;
-        }
-
-        QString tag = release.value(QStringLiteral("tag_name")).toString();
-        if (tag.startsWith(QLatin1Char('v'), Qt::CaseInsensitive)) {
-            tag.remove(0, 1);
-        }
-        qsizetype suffixIndex = 0;
-        const QVersionNumber version = QVersionNumber::fromString(tag, &suffixIndex);
-        if (version.isNull() || suffixIndex != tag.size()) {
-            if (error != nullptr) {
-                *error = tr("Server returned an invalid release list.");
-            }
-            return std::nullopt;
-        }
-        if (latest.isNull() || version > latest) {
-            latest = version;
-        }
-    }
-
-    return latest.isNull() ? std::nullopt : std::optional<QVersionNumber>(latest);
+    const auto release = publishedRelease(json, false, error);
+    return release ? std::optional<QVersionNumber>(QVersionNumber::fromString(release->version)) : std::nullopt;
 }
 
 QNetworkReply *Application::download(const QUrl &url)
@@ -237,41 +354,119 @@ QNetworkReply *Application::download(const QUrl &url)
   Performs a check whether a new ZealRN version is available. Setting \a quiet to true suppresses
   error and "you are using the latest version" message boxes.
 */
-void Application::checkForUpdates(bool quiet)
+bool Application::checkForUpdates(bool quiet)
 {
-    const QNetworkReply *reply = download(releasesApiUrl());
-    connect(reply, &QNetworkReply::finished, this, [this, quiet]() {
-        const QScopedPointer<QNetworkReply, QScopedPointerDeleteLater> reply(qobject_cast<QNetworkReply *>(sender()));
+    if (m_updateReply != nullptr) {
+        return false;
+    }
 
-        if (reply->error() != QNetworkReply::NoError) {
+    constexpr qsizetype MaxResponseSize = 1024 * 1024;
+    const QDateTime now = QDateTime::currentDateTimeUtc();
+    m_settings->updateLastAttempt = now;
+    m_settings->save();
+
+    QNetworkRequest request(releasesApiUrl(m_settings->updateIncludePrereleases));
+    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
+    request.setTransferTimeout(15'000);
+    request.setHeader(QNetworkRequest::UserAgentHeader, userAgent());
+    request.setRawHeader("Accept", "application/vnd.github+json");
+    request.setRawHeader("X-GitHub-Api-Version", "2022-11-28");
+    if (!m_settings->updateEtag.isEmpty()) {
+        request.setRawHeader("If-None-Match", m_settings->updateEtag);
+    }
+
+    m_updateReply = m_updateNetworkManager->get(request);
+    QNetworkReply *reply = m_updateReply;
+    auto body = std::make_shared<QByteArray>();
+    auto oversized = std::make_shared<bool>(false);
+    connect(reply, &QIODevice::readyRead, this, [reply, body, oversized]() {
+        body->append(reply->readAll());
+        if (body->size() > MaxResponseSize) {
+            *oversized = true;
+            reply->abort();
+        }
+    });
+    connect(reply, &QNetworkReply::finished, this, [this, reply, body, oversized, quiet, now]() {
+        QScopedPointer<QNetworkReply, QScopedPointerDeleteLater> cleanup(reply);
+        m_updateReply = nullptr;
+        body->append(reply->readAll());
+
+        const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        auto reportError = [this, quiet](const QString &message) {
             if (!quiet) {
-                emit updateCheckError(reply->errorString());
+                emit updateCheckError(message);
             }
+        };
+        if (*oversized || body->size() > MaxResponseSize) {
+            reportError(tr("The release response was too large."));
             return;
         }
 
-        QString error;
-        const auto latestVersion = latestPublishedRelease(reply->readAll(), &error);
-        if (!error.isEmpty()) {
+        std::optional<ReleaseInfo> release;
+        if (status == 304) {
+            const ReleaseInfo cached{m_settings->updateCachedVersion,
+                                     m_settings->updateCachedTitle,
+                                     m_settings->updateCachedPublishedAt,
+                                     QUrl(m_settings->updateCachedPageUrl),
+                                     m_settings->updateCachedPrerelease};
+            if (!cached.version.isEmpty() && cached.publishedAt.isValid() && isTrustedReleaseUrl(cached.pageUrl)) {
+                release = cached;
+            }
+        } else if (status == 404) {
+            m_settings->updateLastSuccess = now;
+            m_settings->save();
             if (!quiet) {
-                emit updateCheckError(error);
+                emit updateCheckNoReleases();
             }
             return;
+        } else if (status == 403) {
+            const QByteArray remaining = reply->rawHeader("X-RateLimit-Remaining");
+            reportError(remaining == "0" ? tr("GitHub's API rate limit has been reached. Try again later.")
+                                          : tr("GitHub refused the update request (HTTP 403)."));
+            return;
+        } else if (reply->error() != QNetworkReply::NoError) {
+            reportError(reply->errorString());
+            return;
+        } else if (status < 200 || status >= 300) {
+            reportError(tr("GitHub returned HTTP status %1.").arg(status));
+            return;
+        } else if (body->isEmpty()) {
+            reportError(tr("GitHub returned an empty release response."));
+            return;
+        } else {
+            QString error;
+            release = publishedRelease(*body, m_settings->updateIncludePrereleases, &error);
+            if (!error.isEmpty()) {
+                reportError(error);
+                return;
+            }
+            m_settings->updateEtag = reply->rawHeader("ETag");
+            if (release) {
+                m_settings->updateCachedVersion = release->version;
+                m_settings->updateCachedTitle = release->title;
+                m_settings->updateCachedPublishedAt = release->publishedAt;
+                m_settings->updateCachedPageUrl = release->pageUrl.toString();
+                m_settings->updateCachedPrerelease = release->prerelease;
+            }
         }
 
-        if (!latestVersion.has_value()) {
+        m_settings->updateLastSuccess = now;
+        m_settings->save();
+        if (!release) {
             if (!quiet) {
                 emit updateCheckNoReleases();
             }
             return;
         }
-
-        if (*latestVersion > version()) {
-            emit updateCheckDone(latestVersion->toString());
+        if (compareSemanticVersions(release->version, QCoreApplication::applicationVersion()) > 0
+            && release->version != m_settings->updateSkippedVersion) {
+            emit updateAvailable(*release);
+            emit updateCheckDone(release->version);
         } else if (!quiet) {
             emit updateCheckDone();
         }
     });
+    return true;
 }
 
 void Application::applySettings()

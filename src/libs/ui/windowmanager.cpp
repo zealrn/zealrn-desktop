@@ -10,12 +10,16 @@
 #include <registry/searchquery.h>
 
 #include <QAction>
+#include <QAbstractButton>
 #include <QApplication>
 #include <QDesktopServices>
 #include <QIcon>
+#include <QLocale>
 #include <QMenu>
 #include <QMessageBox>
+#include <QPushButton>
 #include <QSystemTrayIcon>
+#include <QTimer>
 #include <QUrl>
 
 namespace Zeal::WidgetUi {
@@ -43,29 +47,52 @@ WindowManager::WindowManager(Core::Application *application, QObject *parent)
             QMessageBox::information(activeWindow(),
                                      tr("Check for Updates"),
                                      tr("You are using the latest published ZealRN release."));
+        }
+    });
+
+    connect(m_application,
+            &Core::Application::updateAvailable,
+            this,
+            [this](const Core::Application::ReleaseInfo &release) {
+        if (release.version == m_notifiedUpdateVersion) {
             return;
         }
+        m_notifiedUpdateVersion = release.version;
 
-        // TODO: Remove this ugly workaround for #637.
-        qApp->setQuitOnLastWindowClosed(false);
-        const int ret = QMessageBox::information(activeWindow(),
-                                                 tr("ZealRN Update Available"),
-                                                 tr("ZealRN %1 is available.").arg(version.toHtmlEscaped()),
-                                                 QMessageBox::Open | QMessageBox::Cancel,
-                                                 QMessageBox::Open);
-        qApp->setQuitOnLastWindowClosed(true);
-
-        if (ret == QMessageBox::Open) {
-            QDesktopServices::openUrl(Core::Application::releasesPageUrl());
-        }
+        auto *message = new QMessageBox(QMessageBox::Information,
+                                        tr("ZealRN Update Available"),
+                                        tr("ZealRN %1 is available.\n\n%2\nPublished %3")
+                                            .arg(release.version,
+                                                 release.title,
+                                                 QLocale().toString(release.publishedAt.date(), QLocale::ShortFormat)),
+                                        QMessageBox::NoButton,
+                                        activeWindow());
+        message->setTextFormat(Qt::PlainText);
+        message->setAttribute(Qt::WA_DeleteOnClose);
+        QAbstractButton *viewButton = message->addButton(tr("View Release"), QMessageBox::AcceptRole);
+        QAbstractButton *downloadButton = message->addButton(tr("Download Page"), QMessageBox::ActionRole);
+        message->addButton(tr("Remind Me Later"), QMessageBox::RejectRole);
+        QAbstractButton *skipButton = message->addButton(tr("Skip This Version"), QMessageBox::DestructiveRole);
+        message->addButton(QMessageBox::Close);
+        connect(message, &QMessageBox::finished, this, [this, message, release, viewButton, downloadButton, skipButton]() {
+            if (message->clickedButton() == viewButton || message->clickedButton() == downloadButton) {
+                QDesktopServices::openUrl(release.pageUrl);
+            } else if (message->clickedButton() == skipButton) {
+                m_settings->updateSkippedVersion = release.version;
+                m_settings->save();
+            }
+        });
+        message->show();
     });
 
     connect(m_settings, &Core::Settings::updated, this, &WindowManager::applySettings);
     applySettings();
 
-    if (m_settings->checkForUpdate) {
-        m_application->checkForUpdates(true);
-    }
+    QTimer::singleShot(15'000, this, [this]() {
+        if (m_settings->isAutomaticUpdateCheckDue()) {
+            m_application->checkForUpdates(true);
+        }
+    });
 }
 
 WindowManager::~WindowManager()
