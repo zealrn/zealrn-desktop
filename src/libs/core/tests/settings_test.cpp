@@ -33,6 +33,7 @@ private slots:
     void gettingStartedSettingsRestoreAfterReopen();
     void invalidGettingStartedValuesUseSafeDefaults();
     void updateSettingsRestoreAfterReopen();
+    void automaticUpdateDefaultsOn();
     void invalidUpdateFrequencyFallsBackToDaily();
     void automaticUpdateDue_data();
     void automaticUpdateDue();
@@ -298,6 +299,17 @@ void SettingsTest::updateSettingsRestoreAfterReopen()
     QCOMPARE(restored.updateCachedPageUrl,
              QStringLiteral("https://github.com/abnzrdev/zealrn/releases/tag/v0.2.1"));
     QVERIFY(restored.updateCachedPrerelease);
+}
+
+void SettingsTest::automaticUpdateDefaultsOn()
+{
+    QTemporaryDir dir;
+    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, dir.path());
+
+    const Settings settings;
+    QVERIFY(settings.checkForUpdate);
+    QCOMPARE(settings.updateFrequency, UpdateFrequency::Daily);
+    QVERIFY(!settings.updateIncludePrereleases);
 }
 
 void SettingsTest::invalidUpdateFrequencyFallsBackToDaily()

@@ -97,7 +97,7 @@ endif()
 
 set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 
-option(ZEAL_FEATURE_UPDATE_CHECK "Automatic update check on startup" OFF)
+option(ZEAL_FEATURE_UPDATE_CHECK "Automatic update check on startup" ON)
 if(ZEAL_FEATURE_UPDATE_CHECK)
     add_compile_definitions(ZEAL_FEATURE_UPDATE_CHECK)
 endif()

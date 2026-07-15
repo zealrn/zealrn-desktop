@@ -6,8 +6,7 @@ repo_dir="$(cd "${script_dir}/.." && pwd)"
 build_dir="${repo_dir}/build/release"
 dist_dir="${repo_dir}/dist"
 
-cmake --preset release -D CMAKE_MAKE_PROGRAM=/usr/bin/ninja -D CMAKE_INSTALL_PREFIX=/usr \
-    -D ZEAL_FEATURE_UPDATE_CHECK=OFF
+cmake --preset release -D CMAKE_MAKE_PROGRAM=/usr/bin/ninja -D CMAKE_INSTALL_PREFIX=/usr
 cmake --build --preset release
 mkdir -p "${dist_dir}"
 

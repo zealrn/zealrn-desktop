@@ -21,8 +21,7 @@ download() {
     fi
 }
 
-cmake --preset release -D CMAKE_MAKE_PROGRAM=/usr/bin/ninja -D CMAKE_INSTALL_PREFIX=/usr \
-    -D ZEAL_FEATURE_UPDATE_CHECK=OFF
+cmake --preset release -D CMAKE_MAKE_PROGRAM=/usr/bin/ninja -D CMAKE_INSTALL_PREFIX=/usr
 cmake --build --preset release
 
 mkdir -p "${tools_dir}" "${dist_dir}"
