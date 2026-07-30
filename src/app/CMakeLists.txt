@@ -169,7 +169,17 @@ set(CPACK_PACKAGE_EXECUTABLES ${_project_output_name} ${CPACK_PACKAGE_NAME})
 set(CPACK_CREATE_DESKTOP_LINKS ${_project_output_name} ${CPACK_PACKAGE_NAME})
 
 set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README.md")
-set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/COPYING")
+if(WIN32)
+    # WiX requires a license file with a supported extension.
+    configure_file(
+        "${CMAKE_SOURCE_DIR}/COPYING"
+        "${CMAKE_BINARY_DIR}/COPYING.txt"
+        COPYONLY
+    )
+    set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_BINARY_DIR}/COPYING.txt")
+else()
+    set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/COPYING")
+endif()
 
 if(WIN32)
     # CPack WiX configuration.

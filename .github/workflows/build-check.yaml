@@ -256,6 +256,40 @@ jobs:
           echo "Zeal Version: ${zeal_version}"
           echo "ZEAL_VERSION=${zeal_version}" >> $GITHUB_ENV
 
+      - name: Install AppImage packaging tools
+
+        shell: bash
+
+        run: |
+
+          set -euo pipefail
+
+
+          if command -v patchelf >/dev/null 2>&1; then
+
+            echo "patchelf is already installed"
+
+          elif [ "$(id -u)" -eq 0 ]; then
+
+            apt-get update
+
+            apt-get install -y --no-install-recommends patchelf
+
+          elif command -v sudo >/dev/null 2>&1; then
+
+            sudo apt-get update
+
+            sudo apt-get install -y --no-install-recommends patchelf
+
+          else
+
+            echo "patchelf is required for AppImage packaging" >&2
+
+            exit 1
+
+          fi
+
+
       - name: Prepare AppDir
         run: DESTDIR=${{ github.workspace }}/AppDir cmake --install build
 
