@@ -1,62 +1,93 @@
 # ZealRN
 
-<p align="center">
-  <img src="assets/branding/zealrn-logo.svg" width="96" alt="ZealRN logo">
-</p>
+**An offline, interactive learning workspace for developers.**
 
-<p align="center"><strong>Offline documentation that helps you learn, not just search.</strong></p>
+ZealRN extends the [Zeal](https://zealdocs.org/) documentation browser into a complete learning environment. Instead of only searching and reading documentation, users can read, practise commands, and take notes without switching between multiple applications.
 
-<p align="center">
-  <a href="https://zealrn.github.io/zealrn-web/">Try ZealRN Web</a> ·
-  <a href="https://zealrn.github.io/">Product Site</a> ·
-  <a href="https://github.com/zealrn/zealrn-desktop/issues">Report an Issue</a>
-</p>
+## Why ZealRN?
 
-ZealRN is a local-first learning workspace: read documentation, write notes linked to the page you are studying, experiment with HTML/CSS/JavaScript, and review your work later.
+Learning programming usually requires several separate tools:
 
-## Features
+- A browser or documentation reader
+- A terminal for testing commands
+- A notepad for saving explanations and examples
+- A code editor for practice
 
-- Browse and search the downloadable Zeal/Dash docset catalog offline after installation.
-- Write an always-available **Start Note** before opening documentation.
-- Keep one persistent Markdown-compatible note per documentation page.
-- Capture selected documentation text without executing it.
-- Search, reopen, and export notes as Markdown, searchable PDF, JSON, ZIP, or SQLite backup.
-- Experiment in an offline Web Playground with HTML, CSS, JavaScript, preview, and console output.
-- Use System, Light, or Dark appearance and a first-run Quick Tour.
-- Use the normal local developer environment from the Linux embedded terminal.
+ZealRN brings these learning tools into one focused desktop workspace.
 
-## Desktop And Web
+## Main Features
 
-| | ZealRN Desktop | ZealRN Web |
-|---|---|---|
-| Documentation | Downloadable docset catalog | Small starter library |
-| Notes | Local SQLite database | Browser IndexedDB |
-| Playground | Isolated Qt WebEngine preview | Sandboxed browser iframe |
-| Terminal | Embedded xterm.js/POSIX PTY on Linux | Not available |
-| Windows terminal | External Windows Terminal, PowerShell, cmd, or Git Bash | Not available |
-| Install | Linux packages and Windows packages are being prepared | Installable PWA |
+### Offline Documentation
 
-ZealRN 0.1.0 packages are being prepared for public release. No public binary download is linked until a release is published.
+Search and read programming documentation locally without depending on an internet connection.
 
-## Start Note And Learning Notes
+### Integrated Terminal
 
-The Start Note is a persistent scratchpad available without a docset. Opening a documentation page switches the panel to that page's note. Notes autosave, preserve Markdown text, and remain on the local device.
+Run commands and practise examples while reading the related documentation.
 
-The editor supports Markdown actions, Edit/Preview modes, note search, zoom, focus mode, selected-text capture, and searchable exports. Back up the SQLite database or export notes regularly.
+Linux includes an embedded terminal. Windows opens an external terminal such as Windows Terminal, PowerShell, Command Prompt, or Git Bash.
 
-## Web Playground
+### Built-in Notepad
 
-The bundled CodeMirror editors and preview require no Node.js or network at runtime. Preview requests to external network schemes are blocked. This is defense-in-depth, not a perfect security sandbox; run only code you understand.
+Write page-linked notes, save useful examples, and record what you learn without leaving the application.
 
-## Terminal
+Notes can be exported as Markdown, PDF, JSON, ZIP, or a database backup and shared with AI agents as project context.
 
-Linux builds include an embedded xterm.js terminal backed by a native POSIX PTY. It has the same access as the normal user shell. Windows builds open an external Windows Terminal, PowerShell, Command Prompt, or Git Bash instead; ZealRN does not claim an embedded Windows terminal.
+### Web Playground
 
-## Install Status
+Practise HTML, CSS, and JavaScript with a built-in editor, preview, and console.
 
-Public releases are not published yet. Follow the [product site](https://zealrn.github.io/) for release status. The [Web PWA](https://zealrn.github.io/zealrn-web/) is available for trying the browser experience.
+### Focused Learning Workspace
 
-## Build From Source
+Keep documentation, practice, and personal notes together in one environment with fewer distractions.
+
+## How It Is Different from Zeal
+
+Zeal is an offline documentation browser.
+
+ZealRN builds on that foundation and adds tools for active learning:
+
+| Zeal | ZealRN |
+| --- | --- |
+| Read documentation | Read and actively practise |
+| Search docsets | Search docsets while using a terminal |
+| Reference tool | Interactive learning workspace |
+| Documentation only | Documentation, terminal, playground, and notes |
+
+## Project Goal
+
+The goal of ZealRN is to help developers move from simply reading documentation to learning by doing.
+
+A user should be able to:
+
+1. Find a programming topic.
+2. Read its documentation.
+3. Test commands in the integrated terminal.
+4. Save explanations and examples in the notepad.
+5. Export useful context for AI agents.
+6. Continue learning without changing applications.
+
+## Built From Zeal
+
+ZealRN is built from the open-source [Zeal documentation browser](https://zealdocs.org/). The original Zeal developers and contributors created the documentation browsing foundation.
+
+ZealRN focuses on extending that foundation with interactive learning and productivity features. The original GPL license, copyright notices, contribution history, and attribution are preserved.
+
+See [UPSTREAM.md](UPSTREAM.md) for details.
+
+## Current Development
+
+The main learning workflow includes:
+
+- Offline documentation browsing
+- An integrated Linux terminal
+- External terminal support on Windows
+- Page-linked learning notes
+- Markdown, PDF, JSON, ZIP, and database exports
+- A built-in Web Playground
+- A unified learning interface
+
+## Build and Installation
 
 Linux requires Qt 6 with WebEngine, SQLite, PrintSupport, CMake, Ninja, and the project dependencies. The normal build flow is:
 
