@@ -14,6 +14,10 @@
 
 ZealRN is a local-first learning workspace: read documentation, write notes linked to the page you are studying, experiment with HTML/CSS/JavaScript, and review your work later.
 
+<p align="center">
+  <img src="assets/screenshots/zealrn-learning-workspace.png" alt="ZealRN desktop learning workspace with documentation, notes, playground, and terminal">
+</p>
+
 ## Features
 
 - Browse and search the downloadable Zeal/Dash docset catalog offline after installation.
