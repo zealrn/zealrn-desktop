@@ -294,7 +294,7 @@ jobs:
         run: DESTDIR=${{ github.workspace }}/AppDir cmake --install build
 
       - name: Validate AppStream Metadata
-        run: appstreamcli validate AppDir/usr/share/metainfo/org.zealdocs.zeal.appdata.xml
+        run: appstreamcli validate --no-net AppDir/usr/share/metainfo/io.github.abnzrdev.zealrn.appdata.xml
 
       - name: Set Up AppRun Hooks
         run: |
