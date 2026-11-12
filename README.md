@@ -4,7 +4,7 @@
   <img src="assets/branding/zealrn-logo.svg" width="96" alt="ZealRN logo">
 </p>
 
-<p align="center"><strong>Offline documentation that helps you learn, not just search.</strong></p>
+Offline documentation, page-linked notes, a web playground, and desktop terminal tools. Built with C++, Qt 6, and SQLite.
 
 <p align="center">
   <a href="https://zealrn.github.io/zealrn-web/">Try ZealRN Web</a> ·
@@ -101,3 +101,6 @@ ZealRN is independently maintained and based on [Zeal](https://github.com/zealdo
 ## License
 
 ZealRN is available under [GPL-3.0-or-later](COPYING). Third-party notices are included with the source and installed application.
+
+
+Presentation refined with [Unslop](https://github.com/heydamir/unslop) by Damir Sokolovsky (CC BY 4.0).
